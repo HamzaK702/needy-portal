@@ -9,6 +9,7 @@ import NeedyManagement from "./pages/NeedyManagement";
 import CaseManagement from "./pages/CaseManagement";
 import DonorRelations from "./pages/DonorRelations";
 import RequestManagement from "./pages/RequestManagement";
+import AddCase from "./pages/AddCase";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="reports" element={<div className="p-6">Reports - Coming Soon</div>} />
             <Route path="financial" element={<div className="p-6">Financial - Coming Soon</div>} />
             <Route path="requests" element={<RequestManagement />} />
+            <Route path="add-case" element={<AddCase />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           </Route>
           <Route path="*" element={<NotFound />} />
