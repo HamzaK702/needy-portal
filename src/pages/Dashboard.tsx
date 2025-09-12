@@ -1,8 +1,8 @@
-import MetricCard from '@/components/dashboard/MetricCard';
-import CaseCard from '@/components/dashboard/CaseCard';
-import ActivityFeed from '@/components/dashboard/ActivityFeed';
-import { Users, Heart, TrendingUp, AlertTriangle, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import ActivityFeed from "@/components/dashboard/ActivityFeed";
+import CaseCard from "@/components/dashboard/CaseCard";
+import MetricCard from "@/components/dashboard/MetricCard";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Heart, Plus, TrendingUp, Users } from "lucide-react";
 
 const Dashboard = () => {
   return (
@@ -59,7 +59,7 @@ const Dashboard = () => {
           <Heart className="w-5 h-5 text-muted-foreground" />
           <h2 className="text-xl font-semibold">Active Cases</h2>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CaseCard
             title="Fatima's Education Fund"
@@ -100,13 +100,22 @@ const Dashboard = () => {
           <div className="bg-gradient-primary text-primary-foreground p-6 rounded-lg">
             <h3 className="font-semibold mb-2">Quick Actions</h3>
             <div className="space-y-2">
-              <Button variant="secondary" className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white">
+              <Button
+                variant="secondary"
+                className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white"
+              >
                 Browse New Cases
               </Button>
-              <Button variant="secondary" className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white">
+              <Button
+                variant="secondary"
+                className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white"
+              >
                 Upload Report
               </Button>
-              <Button variant="secondary" className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white">
+              <Button
+                variant="secondary"
+                className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white"
+              >
                 Contact Donor
               </Button>
             </div>
