@@ -1,4 +1,5 @@
 // src/supabase/auth/welcomeCaretaker.ts
+import { uploadViaEdge } from "@/lib/cloudinary";
 import { supabase } from "../client";
 
 type WelcomeFormData = {
@@ -9,30 +10,36 @@ type WelcomeFormData = {
 };
 
 export async function completeCaretakerProfile(formData: WelcomeFormData) {
-  // Step 1: Upload CNIC (private bucket)
+  // Step 1: Upload CNIC
+  const { data } = await supabase.auth.getSession();
+
+  const session = data?.session;
+  if (!session) {
+    console.error("No active session found");
+    return;
+  }
+
   const cnicFile = formData.cnicFile[0];
-  const cnicPath = `${formData.userId}/cnic-${cnicFile.name}`;
-  const { error: cnicError } = await supabase.storage
-    .from("cnic-files")
-    .upload(cnicPath, cnicFile, { cacheControl: "3600", upsert: false });
+  const cnicPublicId = `${formData.userId}/cnic-${Date.now()}`;
+  const cnicResult = await uploadViaEdge(
+    session.access_token, // ✅ correct property
+    cnicFile,
+    cnicPublicId,
+    "caretaker-portal/cnic-files"
+  );
 
-  if (cnicError) throw cnicError;
-
-  const cnicFilePath = cnicPath;
-
-  // Step 2: Upload Profile Pic (optional, public)
+  // Step 2: Upload Profile Pic (optional)
   let profilePicUrl: string | null = null;
   if (formData.profilePic && formData.profilePic.length > 0) {
     const picFile = formData.profilePic[0];
-    const picPath = `profile/${formData.userId}-${picFile.name}`;
-    const { error: picError } = await supabase.storage
-      .from("profile-pics")
-      .upload(picPath, picFile, { cacheControl: "3600", upsert: false });
-
-    if (picError) throw picError;
-
-    profilePicUrl = supabase.storage.from("profile-pics").getPublicUrl(picPath)
-      .data.publicUrl;
+    const picPublicId = `${formData.userId}/profile-${Date.now()}`;
+    const picResult = await uploadViaEdge(
+      session.access_token, // ✅ correct property
+      picFile,
+      picPublicId,
+      "caretaker-portal/profile-pics"
+    );
+    profilePicUrl = picResult.url;
   }
 
   // Step 3: Insert caretaker profile details
@@ -41,11 +48,22 @@ export async function completeCaretakerProfile(formData: WelcomeFormData) {
     .insert({
       profile_id: formData.userId,
       area_of_operations: formData.areaOfOperations,
-      cnic_file_path: cnicFilePath,
+      cnic_file_url: cnicResult.url,
       profile_pic_url: profilePicUrl,
     });
 
   if (caretakerError) throw caretakerError;
+
+  // Step 4: Mark profile as completed
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ isprofilecompleted: true })
+    .eq("id", formData.userId);
+
+  if (profileError) throw profileError;
+
+  // localStorage update
+  localStorage.setItem(`${formData.userId}_isProfileCompleted`, "true");
 
   return { success: true };
 }

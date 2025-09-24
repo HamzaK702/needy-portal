@@ -1,203 +1,338 @@
-import { useState } from 'react';
-import { Calendar, Camera, FileText, DollarSign, Users, Clock, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { calculateProgress } from "@/lib/helpers";
+import { useAuthStore } from "@/store/useAuthStore";
+import { deleteCase } from "@/supabase/cases/deleteCase";
+import { supabase } from "@/supabase/client";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Edit,
+  Eye,
+  FileTextIcon,
+  Plus,
+  Search,
+  TrashIcon,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
-const cases = [
-  {
-    id: 1,
-    name: 'Fatima Ahmed Education Fund',
-    beneficiary: 'Fatima Ahmed',
-    status: 'Active',
-    priority: 'High',
-    progress: 75,
-    raised: 37500,
-    target: 50000,
-    startDate: '2024-01-15',
-    lastUpdate: '2024-02-28',
-    nextFollowup: '2024-03-15',
-    donorCount: 12,
-    timeline: [
-      { date: '2024-02-28', type: 'donation', title: 'Received $500 donation', amount: 500 },
-      { date: '2024-02-25', type: 'report', title: 'Monthly progress report uploaded' },
-      { date: '2024-02-20', type: 'visit', title: 'Family visit completed' },
-      { date: '2024-02-15', type: 'photo', title: 'Updated living condition photos' },
-    ]
-  },
-  {
-    id: 2,
-    name: 'Ahmed Hassan Medical Treatment',
-    beneficiary: 'Ahmed Hassan',
-    status: 'Critical',
-    priority: 'Critical',
-    progress: 45,
-    raised: 36000,
-    target: 80000,
-    startDate: '2024-02-10',
-    lastUpdate: '2024-02-27',
-    nextFollowup: '2024-03-05',
-    donorCount: 8,
-    timeline: [
-      { date: '2024-02-27', type: 'urgent', title: 'Urgent funding request submitted', amount: 10000 },
-      { date: '2024-02-24', type: 'medical', title: 'Hospital bills submitted' },
-      { date: '2024-02-20', type: 'donation', title: 'Emergency donation received', amount: 2000 },
-    ]
-  }
-];
+// Define request type
+interface Request {
+  id: string; // UUID from DB
+  user_id: string | null; // User who created the case
+  name: string; // Case title holder / beneficiary name
+  title: string; // Case title
+  short_story: string; // Short story / description
+  full_story: string; // Full story
+  category: "medical" | "education" | "food" | "shelter" | "other";
+  urgency_level: "low" | "medium" | "high";
+  required_amount: number;
+  raised_amount: number;
+  is_recurring: boolean;
+  recurring_duration: number | null; // in days
+  location: string;
+  docs: { name: string; url: string }[]; // JSONB documents array
+  status: "active" | "pending" | "fulfilled" | string;
+  created_at: string;
+  updated_at: string;
+}
 
 const CaseManagement = () => {
-  const [selectedCase, setSelectedCase] = useState(cases[0]);
+  const [activeTab, setActiveTab] = useState("all");
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { user } = useAuthStore();
 
-  const TimelineView = ({ caseData }: { caseData: typeof cases[0] }) => (
-    <div className="space-y-4">
-      {caseData.timeline.map((event, index) => (
-        <div key={index} className="flex gap-4 p-4 border border-border rounded-lg">
-          <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-            {event.type === 'donation' && <DollarSign className="w-5 h-5 text-success" />}
-            {event.type === 'report' && <FileText className="w-5 h-5 text-info" />}
-            {event.type === 'visit' && <Users className="w-5 h-5 text-primary" />}
-            {event.type === 'photo' && <Camera className="w-5 h-5 text-warning" />}
-            {event.type === 'urgent' && <AlertTriangle className="w-5 h-5 text-destructive" />}
-            {event.type === 'medical' && <FileText className="w-5 h-5 text-info" />}
-          </div>
+  useEffect(() => {
+    const fetchRequests = async () => {
+      setLoading(true);
+
+      // Fetch only cases for this user
+      const { data, error } = await supabase
+        .from("cases")
+        .select("*")
+        .eq("user_id", user.id) // filter by user
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching requests:", error);
+        setRequests([]);
+      } else {
+        setRequests(data || []);
+      }
+
+      setLoading(false);
+    };
+
+    fetchRequests();
+  }, []);
+
+  const filteredBySearch = requests.filter(
+    (r) =>
+      r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.short_story.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredRequests = filteredBySearch.filter((r) => {
+    const status = r.status.toLowerCase();
+    switch (activeTab) {
+      case "active":
+        return status === "active";
+      case "pending":
+        return status === "pending";
+      case "fulfilled":
+        return status === "fulfilled";
+      default:
+        return true;
+    }
+  });
+
+  const activeCount = requests.filter(
+    (r) => r.status.toLowerCase() === "active"
+  ).length;
+  const pendingCount = requests.filter(
+    (r) => r.status.toLowerCase() === "pending"
+  ).length;
+  const fulfilledCount = requests.filter(
+    (r) => r.status.toLowerCase() === "fulfilled"
+  ).length;
+
+  const RequestCard = ({ request }: { request: Request }) => {
+    const displayStatus = request.status
+      ? request.status.charAt(0).toUpperCase() + request.status.slice(1)
+      : "Unknown";
+
+    const displayUrgency = request.urgency_level
+      ? request.urgency_level.charAt(0).toUpperCase() +
+        request.urgency_level.slice(1)
+      : "Normal";
+
+    const handleDelete = async (requestParam) => {
+      const result = await deleteCase(requestParam?.id);
+      if (result.success) {
+        toast("Case deleted2 successfully");
+        // Optionally, remove it from state so UI updates immediately
+        setRequests((prev) => prev.filter((r) => r.id !== requestParam?.id));
+      }
+    };
+
+    return (
+      <Card className="p-6 hover:shadow-hover transition-shadow">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium">{event.title}</h4>
-              <span className="text-sm text-muted-foreground">{event.date}</span>
-            </div>
-            {event.amount && (
-              <p className="text-success font-medium mt-1">+${event.amount.toLocaleString()}</p>
-            )}
+            <h3 className="font-semibold text-lg mb-2">
+              {request.title || "No Title"}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              {request.short_story || "No short story"}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <Badge
+              variant={
+                request.status?.toLowerCase() === "active"
+                  ? "default"
+                  : request.status?.toLowerCase() === "fulfilled"
+                  ? "secondary"
+                  : "outline"
+              }
+            >
+              {displayStatus}
+            </Badge>
+            <Badge
+              variant={
+                request.urgency_level?.toLowerCase() === "critical"
+                  ? "destructive"
+                  : request.urgency_level?.toLowerCase() === "high"
+                  ? "secondary"
+                  : "outline"
+              }
+            >
+              {displayUrgency}
+            </Badge>
           </div>
         </div>
-      ))}
-    </div>
-  );
 
-  const ProgressTracker = ({ caseData }: { caseData: typeof cases[0] }) => (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4">Funding Progress</h3>
-        <div className="space-y-3">
+        {/* Progress */}
+        <div className="space-y-3 mb-4">
           <div className="flex justify-between text-sm">
-            <span>Raised</span>
-            <span className="font-medium">${caseData.raised.toLocaleString()} / ${caseData.target.toLocaleString()}</span>
+            <span>Progress</span>
+            <span>
+              PKR {request.raised_amount?.toLocaleString() || 0} / PKR{" "}
+              {request.required_amount?.toLocaleString() || 0}
+            </span>
           </div>
-          <Progress value={caseData.progress} className="h-3" />
+          <div className="w-full bg-muted rounded-full h-2">
+            <div
+              className="bg-success h-2 rounded-full transition-all"
+              style={{
+                width: `${calculateProgress(
+                  request.raised_amount,
+                  request.required_amount
+                )}%`,
+              }}
+            />
+          </div>
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{caseData.progress}% Complete</span>
-            <span>${(caseData.target - caseData.raised).toLocaleString()} remaining</span>
+            <span>
+              {calculateProgress(
+                request.raised_amount,
+                request.required_amount
+              )}
+              % funded
+            </span>
           </div>
         </div>
-      </Card>
 
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4">Key Metrics</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-muted rounded-lg">
-            <div className="text-2xl font-bold text-primary">{caseData.donorCount}</div>
-            <div className="text-sm text-muted-foreground">Active Donors</div>
-          </div>
-          <div className="text-center p-3 bg-muted rounded-lg">
-            <div className="text-2xl font-bold text-success">PKR {caseData.raised.toLocaleString()}</div>
-            <div className="text-sm text-muted-foreground">Total Raised</div>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4">Upcoming Activities</h3>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <Calendar className="w-4 h-4 text-primary" />
-            <div className="flex-1">
-              <p className="font-medium text-sm">Follow-up Visit</p>
-              <p className="text-xs text-muted-foreground">{caseData.nextFollowup}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <FileText className="w-4 h-4 text-warning" />
-            <div className="flex-1">
-              <p className="font-medium text-sm">Monthly Report Due</p>
-              <p className="text-xs text-muted-foreground">March 1, 2024</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-
-  const DonationUtilization = ({ caseData }: { caseData: typeof cases[0] }) => (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold">Utilization Log</h3>
+        {/* View/Edit Buttons */}
+        <div className="flex gap-2">
           <Dialog>
             <DialogTrigger asChild>
-              <Button size="sm">Add Utilization</Button>
+              <Button variant="outline" size="sm" className="flex-1">
+                <Eye className="w-4 h-4 mr-2" /> View Details
+              </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-3xl p-6">
               <DialogHeader>
-                <DialogTitle>Record Fund Utilization</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">
+                  {request.title || "Untitled Request"}
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="amount">Amount (PKR)</Label>
-                  <Input id="amount" type="number" placeholder="Enter amount" />
-                </div>
-                <div>
-                  <Label htmlFor="purpose">Purpose</Label>
-                  <Input id="purpose" placeholder="e.g., School fees, Medical bills" />
-                </div>
-                <div>
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea id="notes" placeholder="Additional details..." />
-                </div>
-                <div>
-                  <Label>Upload Receipt/Proof</Label>
-                  <Card className="p-4 border-2 border-dashed border-muted hover:border-primary transition-colors cursor-pointer">
-                    <div className="text-center">
-                      <Camera className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm">Upload receipt or photo proof</p>
+              <div className="mt-4 space-y-6">
+                {/* Summary Section */}
+                <Card className="p-4 bg-muted/50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        Category
+                      </Label>
+                      <p className="text-base font-semibold capitalize">
+                        {request.category || "-"}
+                      </p>
                     </div>
-                  </Card>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        Urgency Level
+                      </Label>
+                      <p className="text-base font-semibold">
+                        {request.urgency_level
+                          ? request.urgency_level.charAt(0).toUpperCase() +
+                            request.urgency_level.slice(1)
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        Required Amount
+                      </Label>
+                      <p className="text-base font-semibold">
+                        PKR {request.required_amount?.toLocaleString() || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        Raised Amount
+                      </Label>
+                      <p className="text-base font-semibold">
+                        PKR {request.raised_amount?.toLocaleString() || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        Recurring
+                      </Label>
+                      <p className="text-base font-semibold">
+                        {request.is_recurring
+                          ? `Yes (Every ${
+                              request.recurring_duration || "-"
+                            } days)`
+                          : "No"}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        Location
+                      </Label>
+                      <p className="text-base font-semibold">
+                        {request.location || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Full Story Section */}
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Full Story
+                  </Label>
+                  <p className="text-base text-foreground mt-1 leading-relaxed">
+                    {request.full_story || "No story provided."}
+                  </p>
                 </div>
-                <Button className="w-full">Record Utilization</Button>
+
+                {/* Documents Section */}
+                {request.docs && request.docs.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Documents
+                    </Label>
+                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {request.docs.map((doc: any, idx: number) => (
+                        <a
+                          key={idx}
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                        >
+                          <FileTextIcon className="w-5 h-5 text-primary" />
+                          <span className="text-sm text-blue-600 underline truncate">
+                            {doc.name || `Document ${idx + 1}`}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>
-        </div>
-        
-        <div className="space-y-3">
-          {[
-            { date: '2024-02-25', amount: 5000, purpose: 'School fees payment', verified: true },
-            { date: '2024-02-20', amount: 2500, purpose: 'Medical checkup', verified: true },
-            { date: '2024-02-15', amount: 3000, purpose: 'Monthly groceries', verified: false },
-          ].map((item, index) => (
-            <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
-              <div>
-                <p className="font-medium">{item.purpose}</p>
-                <p className="text-sm text-muted-foreground">{item.date}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium">PKR {item.amount.toLocaleString()}</p>
-                <Badge variant={item.verified ? 'default' : 'secondary'}>
-                  {item.verified ? 'Verified' : 'Pending'}
-                </Badge>
-              </div>
-            </div>
-          ))}
+
+          <Button size="sm" className="flex-1">
+            <Edit className="w-3 h-3 mr-1" /> Edit Request
+          </Button>
+          <Button
+            size="sm"
+            className="flex items-center justify-center w-[10%] hover:bg-red-600 bg-red-500"
+            onClick={() => handleDelete(request)}
+          >
+            <TrashIcon className="w-3 h-3" />
+          </Button>
         </div>
       </Card>
-    </div>
-  );
+    );
+  };
+
+  if (loading) {
+    return <div className="p-6 text-center text-lg">Loading requests...</div>;
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -205,83 +340,78 @@ const CaseManagement = () => {
         <div>
           <h1 className="text-3xl font-bold">Case Management</h1>
           <p className="text-muted-foreground mt-1">
-            Track progress and manage active cases
+            Create and track your donation requests
           </p>
         </div>
-        <Button className="bg-gradient-primary">
-          <TrendingUp className="w-4 h-4 mr-2" />
-          Request More Help
-        </Button>
+        <Link to="/add-case">
+          <Button className="bg-gradient-primary">
+            <Plus className="w-4 h-4 mr-2" /> Create New Request
+          </Button>
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Case List Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="p-4">
-            <h3 className="font-semibold mb-4">Active Cases</h3>
-            <div className="space-y-2">
-              {cases.map((caseItem) => (
-                <button
-                  key={caseItem.id}
-                  onClick={() => setSelectedCase(caseItem)}
-                  className={`w-full text-left p-3 rounded-lg transition-colors ${
-                    selectedCase.id === caseItem.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                  }`}
-                >
-                  <div className="font-medium text-sm truncate">{caseItem.name}</div>
-                  <div className="text-xs opacity-75 mt-1">{caseItem.beneficiary}</div>
-                  <div className="flex items-center justify-between mt-2">
-                    <Badge 
-                      variant={caseItem.status === 'Critical' ? 'destructive' : 'default'}
-                      className="text-xs"
-                    >
-                      {caseItem.status}
-                    </Badge>
-                    <span className="text-xs opacity-75">{caseItem.progress}%</span>
-                  </div>
-                </button>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 flex items-center gap-3">
+          <Clock className="w-8 h-8 text-warning" />
+          <div>
+            <p className="text-2xl font-bold">{activeCount}</p>
+            <p className="text-sm text-muted-foreground">Active Requests</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-3">
+          <CheckCircle className="w-8 h-8 text-success" />
+          <div>
+            <p className="text-2xl font-bold">{fulfilledCount}</p>
+            <p className="text-sm text-muted-foreground">Fulfilled</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-3">
+          <AlertTriangle className="w-8 h-8 text-destructive" />
+          <div>
+            <p className="text-2xl font-bold">{pendingCount}</p>
+            <p className="text-sm text-muted-foreground">Pending Review</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search requests..."
+          className="pl-10"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">All Requests</TabsTrigger>
+          <TabsTrigger value="active">Active ({activeCount})</TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+          <TabsTrigger value="fulfilled">
+            Fulfilled ({fulfilledCount})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-6">
+          {filteredRequests.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No requests found. {searchTerm && "Try adjusting your search."}{" "}
+              {activeTab !== "all" && `No ${activeTab} requests yet.`}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {filteredRequests.map((r) => (
+                <RequestCard key={r.id} request={r} />
               ))}
             </div>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <div className="lg:col-span-3">
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold">{selectedCase.name}</h2>
-                <p className="text-muted-foreground">Beneficiary: {selectedCase.beneficiary}</p>
-              </div>
-              <Badge 
-                variant={selectedCase.priority === 'Critical' ? 'destructive' : 'default'}
-              >
-                {selectedCase.priority} Priority
-              </Badge>
-            </div>
-
-            <Tabs defaultValue="timeline" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="timeline">Timeline View</TabsTrigger>
-                <TabsTrigger value="progress">Progress Tracker</TabsTrigger>
-                <TabsTrigger value="utilization">Fund Utilization</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="timeline" className="mt-6">
-                <TimelineView caseData={selectedCase} />
-              </TabsContent>
-
-              <TabsContent value="progress" className="mt-6">
-                <ProgressTracker caseData={selectedCase} />
-              </TabsContent>
-
-              <TabsContent value="utilization" className="mt-6">
-                <DonationUtilization caseData={selectedCase} />
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </div>
-      </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -1,64 +1,142 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, Camera, MapPin, FileText, User, Phone, IdCard, Home } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/store/useAuthStore";
+import { addCase } from "@/supabase/cases/addCase";
+import { FileText, MapPin, Upload, User } from "lucide-react";
+import { useEffect } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+
+const citiesOfPakistan = [
+  "Karachi",
+  "Lahore",
+  "Islamabad",
+  "Rawalpindi",
+  "Faisalabad",
+  "Multan",
+  "Hyderabad",
+  "Peshawar",
+  "Quetta",
+  "Sialkot",
+  "Gujranwala",
+  "Bahawalpur",
+  "Sukkur",
+  "Mardan",
+  "Abbottabad",
+  "Jhelum",
+  "Okara",
+  "Sargodha",
+  "Sheikhupura",
+  "Mirpur Khas",
+  "Rahim Yar Khan",
+];
+
+type FormValues = {
+  name: string;
+  cnic: string;
+  phone: string;
+  address: string;
+  title: string;
+  shortStory: string;
+  fullStory: string;
+  category: string;
+  urgencyLevel: string;
+  requiredAmount: number;
+  familyMembers: number;
+  monthlyIncome?: number;
+  isRecurring: boolean;
+  recurringDuration?: number;
+  location: string;
+  docs: { docName: string; file: File | null }[];
+};
 
 const AddCase = () => {
+  const { user } = useAuthStore();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: '',
-    cnic: '',
-    phone: '',
-    address: '',
-    needType: '',
-    description: '',
-    familyMembers: '',
-    monthlyIncome: '',
-    isRecurring: false,
-    emergencyContact: '',
-    emergencyPhone: ''
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
+    defaultValues: {
+      name: "",
+      cnic: "",
+      phone: "",
+      address: "",
+      title: "",
+      shortStory: "",
+      fullStory: "",
+      category: "",
+      urgencyLevel: "",
+      requiredAmount: 0,
+      familyMembers: 0,
+      monthlyIncome: undefined,
+      isRecurring: false,
+      recurringDuration: undefined,
+      location: "",
+      docs: [{ docName: "", file: null }], // ✅ one pre-added row
+    },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Case Added Successfully",
-      description: "The new case has been created and is now under review.",
-    });
-    // Reset form
-    setFormData({
-      name: '',
-      cnic: '',
-      phone: '',
-      address: '',
-      needType: '',
-      description: '',
-      familyMembers: '',
-      monthlyIncome: '',
-      isRecurring: false,
-      emergencyContact: '',
-      emergencyPhone: ''
-    });
-  };
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "docs",
+  });
+  const isRecurring = watch("isRecurring");
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await addCase({
+        userId: user?.id,
+        ...data,
+      });
+      toast({
+        title: "Case Added Successfully",
+        description: "The new case has been created.",
+      });
+      reset();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Add New Case</h1>
-        <p className="text-muted-foreground">Create a new case for someone in need of assistance</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Add New Case
+        </h1>
+        <p className="text-muted-foreground">
+          Create a new case for someone in need of assistance
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Personal Information */}
         <Card>
           <CardHeader>
@@ -66,154 +144,223 @@ const AddCase = () => {
               <User className="h-5 w-5" />
               Personal Information
             </CardTitle>
-            <CardDescription>Basic details of the person in need</CardDescription>
+            <CardDescription>
+              Basic details of the person in need
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
+                <Label>Full Name *</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Enter full name"
-                  required
+                  {...register("name", { required: "Name is required" })}
                 />
+                {errors.name && (
+                  <p className="text-red-500 text-sm ml-1">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cnic">CNIC *</Label>
+                <Label>CNIC *</Label>
                 <Input
-                  id="cnic"
-                  value={formData.cnic}
-                  onChange={(e) => handleInputChange('cnic', e.target.value)}
-                  placeholder="00000-0000000-0"
-                  required
+                  {...register("cnic", {
+                    required: "CNIC is required",
+                    pattern: {
+                      value: /^[0-9]{13}$/,
+                      message: "CNIC must be exactly 13 digits",
+                    },
+                  })}
                 />
+                {errors.cnic && (
+                  <p className="text-red-500 text-sm ml-1">
+                    {errors.cnic.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label>Phone *</Label>
                 <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="+92 300 0000000"
-                  required
+                  {...register("phone", {
+                    required: "Phone is required",
+                    pattern: {
+                      value: /^[1-9][0-9]{9}$/,
+                      message: "Phone must be 10 digits without 0 at start",
+                    },
+                  })}
                 />
+                {errors.phone && (
+                  <p className="text-red-500 text-sm ml-1">
+                    {errors.phone.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="familyMembers">Family Members</Label>
+                <Label>Family Members</Label>
                 <Input
-                  id="familyMembers"
-                  value={formData.familyMembers}
-                  onChange={(e) => handleInputChange('familyMembers', e.target.value)}
-                  placeholder="Number of family members"
                   type="number"
+                  defaultValue={0}
+                  {...register("familyMembers", {
+                    valueAsNumber: true,
+                    min: { value: 0, message: "Must be 0 or greater" },
+                  })}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address">Complete Address *</Label>
+              <Label>Complete Address *</Label>
               <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                placeholder="Enter complete address including area, city"
-                required
+                {...register("address", { required: "Address is required" })}
               />
+              {errors.address && (
+                <p className="text-red-500 text-sm ml-1">
+                  {errors.address.message}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Need Assessment */}
+        {/* Case Details */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Need Assessment
+              Case Details
             </CardTitle>
-            <CardDescription>Details about the type of assistance required</CardDescription>
+            <CardDescription>
+              Information about the case requirement
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Case Title *</Label>
+              <Input
+                {...register("title", { required: "Case title is required" })}
+              />
+            </div>
+
+            {/* Category and Urgency */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="needType">Type of Need *</Label>
-                <Select value={formData.needType} onValueChange={(value) => handleInputChange('needType', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select need type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="medical">Medical Treatment</SelectItem>
-                    <SelectItem value="education">Education Support</SelectItem>
-                    <SelectItem value="food">Food Assistance</SelectItem>
-                    <SelectItem value="shelter">Housing/Shelter</SelectItem>
-                    <SelectItem value="emergency">Emergency Fund</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="monthlyIncome">Monthly Income (PKR)</Label>
-                <Input
-                  id="monthlyIncome"
-                  value={formData.monthlyIncome}
-                  onChange={(e) => handleInputChange('monthlyIncome', e.target.value)}
-                  placeholder="Enter monthly household income"
-                  type="number"
-                />
-              </div>
+              <Controller
+                control={control}
+                name="category"
+                rules={{ required: "Category is required" }}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Category *</Label>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="medical">Medical</SelectItem>
+                        <SelectItem value="education">Education</SelectItem>
+                        <SelectItem value="food">Food</SelectItem>
+                        <SelectItem value="shelter">Shelter</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.category && (
+                      <p className="text-red-500 text-sm ml-1">
+                        {errors.category.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="urgencyLevel"
+                rules={{ required: "Urgency level is required" }}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Urgency Level *</Label>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select urgency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.urgencyLevel && (
+                      <p className="text-red-500 text-sm ml-1">
+                        {errors.urgencyLevel.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Required Amount (PKR) *</Label>
+              <Input
+                type="number"
+                {...register("requiredAmount", {
+                  required: "Required amount is mandatory",
+                  valueAsNumber: true,
+                  min: { value: 1, message: "Amount must be greater than 0" },
+                })}
+              />
+              {errors.requiredAmount && (
+                <p className="text-red-500 text-sm ml-1">
+                  {errors.requiredAmount.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Detailed Description *</Label>
+              <Label>Short Story *</Label>
               <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Provide detailed information about the situation and assistance needed"
-                className="min-h-[100px]"
-                required
+                {...register("shortStory", {
+                  required: "Short story is required",
+                })}
               />
+              {errors.shortStory && (
+                <p className="text-red-500 text-sm ml-1">
+                  {errors.shortStory.message}
+                </p>
+              )}
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="recurring"
-                checked={formData.isRecurring}
-                onCheckedChange={(checked) => handleInputChange('isRecurring', !!checked)}
+            <div className="space-y-2">
+              <Label>Full Story *</Label>
+              <Textarea
+                className="min-h-[150px]"
+                {...register("fullStory", {
+                  required: "Full story is required",
+                })}
               />
-              <Label htmlFor="recurring">This is a recurring need (monthly assistance)</Label>
+              {errors.fullStory && (
+                <p className="text-red-500 text-sm ml-1">
+                  {errors.fullStory.message}
+                </p>
+              )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Emergency Contact */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
-              Emergency Contact
-            </CardTitle>
-            <CardDescription>Alternate contact person details</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="emergencyContact">Contact Person Name</Label>
-                <Input
-                  id="emergencyContact"
-                  value={formData.emergencyContact}
-                  onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                  placeholder="Name of emergency contact"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="emergencyPhone">Contact Person Phone</Label>
-                <Input
-                  id="emergencyPhone"
-                  value={formData.emergencyPhone}
-                  onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
-                  placeholder="+92 300 0000000"
-                />
-              </div>
+            {/* Recurring */}
+            <div className="flex items-center space-x-2">
+              <Controller
+                control={control}
+                name="isRecurring"
+                render={({ field }) => (
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(!!checked)}
+                  />
+                )}
+              />
+              <Label>Recurring Assistance</Label>
             </div>
+            {isRecurring && (
+              <div className="space-y-2">
+                <Label>Recurring Duration (months)</Label>
+                <Input type="number" {...register("recurringDuration")} />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -224,35 +371,29 @@ const AddCase = () => {
               <Upload className="h-5 w-5" />
               Document Upload
             </CardTitle>
-            <CardDescription>Upload supporting documents and photos</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>CNIC Copy</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                  <IdCard className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Click to upload CNIC</p>
-                  <Input type="file" className="hidden" accept="image/*,.pdf" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Living Conditions Photo</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                  <Camera className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Upload photos</p>
-                  <Input type="file" className="hidden" accept="image/*" multiple />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Additional Documents (Medical reports, bills, etc.)</Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Upload additional supporting documents</p>
-                <Input type="file" className="hidden" accept="image/*,.pdf,.doc,.docx" multiple />
-              </div>
-            </div>
+            <Label>Supporting Documents (at least 1, max 5)</Label>
+            {fields.map((field, index) => (
+              <DocumentField
+                key={field.id}
+                index={index}
+                register={register}
+                setValue={setValue}
+                errors={errors}
+                remove={() => remove(index)}
+                disabledRemove={fields.length === 1}
+              />
+            ))}
+            {fields.length < 5 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => append({ docName: "", file: null })}
+              >
+                + Add Document
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -263,31 +404,113 @@ const AddCase = () => {
               <MapPin className="h-5 w-5" />
               Location Information
             </CardTitle>
-            <CardDescription>Precise location for verification and visits</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-              <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="font-medium mb-2">Mark Location on Map</h3>
-              <p className="text-sm text-muted-foreground mb-4">Click to open map and mark the exact location</p>
-              <Button variant="outline" type="button">
-                <MapPin className="h-4 w-4 mr-2" />
-                Open Map
-              </Button>
-            </div>
+            <Controller
+              control={control}
+              name="location"
+              rules={{ required: "Location is required" }}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label>Select City *</Label>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {citiesOfPakistan.map((city) => (
+                        <SelectItem key={city} value={city}>
+                          {city}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.location && (
+                    <p className="text-red-500 text-sm ml-1">
+                      {errors.location.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
           </CardContent>
         </Card>
 
-        {/* Submit Button */}
-        <div className="flex justify-end space-x-4 pt-6">
-          <Button type="button" variant="outline">
-            Save as Draft
-          </Button>
-          <Button type="submit" className="bg-primary hover:bg-primary/90">
-            Create Case
-          </Button>
-        </div>
+        {/* Actions */}
+        <Button
+          type="submit"
+          className="flex justify-self-end bg-primary hover:bg-primary/90"
+        >
+          Create Case
+        </Button>
       </form>
+    </div>
+  );
+};
+
+// Extracted component for document field to handle useEffect cleanly
+const DocumentField = ({
+  index,
+  register,
+  setValue,
+  errors,
+  remove,
+  disabledRemove,
+}: {
+  index: number;
+  register: any;
+  setValue: any;
+  errors: any;
+  remove: () => void;
+  disabledRemove: boolean;
+}) => {
+  useEffect(() => {
+    register(`docs.${index}.file`, { required: "File is required" });
+  }, [register, index]);
+
+  return (
+    <div className="flex gap-2 items-start">
+      <div className="flex-1">
+        <Input
+          placeholder="Document Name"
+          {...register(`docs.${index}.docName`, {
+            required: "Document name is required",
+          })}
+        />
+        {errors.docs?.[index]?.docName && (
+          <p className="text-red-500 text-sm ml-1">
+            {errors.docs[index].docName?.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Input
+          type="file"
+          accept="image/*,.pdf,.doc,.docx"
+          onChange={(e) => {
+            const file = e.target.files?.[0] || null;
+            setValue(`docs.${index}.file`, file, { shouldValidate: true });
+          }}
+        />
+        {errors.docs?.[index]?.file && (
+          <p className="text-red-500 text-sm ml-1">
+            {errors.docs[index].file?.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={remove}
+          disabled={disabledRemove}
+        >
+          Remove
+        </Button>
+      </div>
     </div>
   );
 };

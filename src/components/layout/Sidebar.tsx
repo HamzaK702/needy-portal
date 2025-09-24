@@ -1,15 +1,16 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/useAuthStore";
 import { supabase } from "@/supabase/client";
 import {
-  Bell,
   ClipboardList,
   DollarSign,
   FileText,
   Heart,
   LayoutDashboard,
   LogOut,
+  LucideFolderPlus,
   Settings,
   UserPlus,
   Users,
@@ -18,16 +19,17 @@ import { NavLink, useLocation } from "react-router-dom";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Case Management", href: "/case-management", icon: ClipboardList },
+  { name: "Add New Case", href: "/add-case", icon: LucideFolderPlus },
   { name: "Browse Cases", href: "/cases", icon: Users },
   { name: "Needy Management", href: "/needy", icon: UserPlus },
-  { name: "Case Management", href: "/case-management", icon: ClipboardList },
   { name: "Donor Relations", href: "/donors", icon: Heart },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Financial", href: "/financial", icon: DollarSign },
-  { name: "Requests", href: "/requests", icon: Bell },
 ];
 
-const Sidebar = ({ userData }) => {
+const Sidebar = () => {
+  const { user, profile } = useAuthStore();
   const location = useLocation();
 
   const handleLogout = () => {
@@ -71,14 +73,14 @@ const Sidebar = ({ userData }) => {
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
             <Avatar className="w-8 h-8">
-              <AvatarImage src="/avatar.jpg" />
+              <AvatarImage src={profile?.profile_pic_url} />
               <AvatarFallback>
-                {userData?.identities[0]?.identity_data?.full_name.slice(0, 1)}
+                {user?.identities[0]?.identity_data?.full_name.slice(0, 1)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">
-                {userData?.identities[0]?.identity_data?.full_name}
+                {user?.identities[0]?.identity_data?.full_name}
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 Caretaker
