@@ -6,6 +6,7 @@ import { calculateProgress } from "@/lib/helpers";
 import { Request } from "@/lib/type";
 import { deleteCase } from "@/supabase/cases/deleteCase";
 import { Edit, Eye, FileTextIcon, TrashIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ interface CaseCardProps {
 }
 
 const CaseCard: React.FC<CaseCardProps> = ({ request, onDelete }) => {
+  const navigate = useNavigate();
   const displayStatus = request.status
     ? request.status.charAt(0).toUpperCase() + request.status.slice(1)
     : "Unknown";
@@ -218,8 +220,12 @@ const CaseCard: React.FC<CaseCardProps> = ({ request, onDelete }) => {
           </DialogContent>
         </Dialog>
 
-        <Button size="sm" className="flex-1">
-          <Edit className="w-3 h-3 mr-1" /> Edit Request
+        <Button
+          size="sm"
+          className="flex-1"
+          onClick={() => navigate(`/edit-case/${request.id}`)}
+        >
+          <Edit className="w-3 h-3 mr-1" /> Edit Case
         </Button>
         <Button
           size="sm"

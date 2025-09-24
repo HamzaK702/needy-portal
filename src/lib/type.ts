@@ -17,6 +17,26 @@ export type FormValues = {
   docs: { docName: string; file: File | null }[];
 };
 
+export type EditFormValues = {
+  name: string;
+  cnic: string;
+  phone: string;
+  address: string;
+  title: string;
+  shortStory: string;
+  fullStory: string;
+  category: string;
+  urgencyLevel: string;
+  requiredAmount: number;
+  familyMembers: number;
+  monthlyIncome?: number;
+  isRecurring: boolean;
+  recurringDuration?: number;
+  location: string;
+  docs: { docName: string; file: File | null }[];
+  status: string;
+};
+
 export type Request = {
   id: string; // UUID from DB
   user_id: string | null; // User who created the case

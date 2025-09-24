@@ -2,12 +2,13 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useSupabaseAuth } from "./hooks/useSupabaseAuth";
 import AddCase from "./pages/AddCase";
+import { ProtectedRoute, SignIn, SignUp } from "./pages/auth";
 import CaseManagement from "./pages/CaseManagement";
 import DonorRelations from "./pages/DonorRelations";
+import EditCase from "./pages/EditCase";
 import Index from "./pages/Index";
 import NeedyManagement from "./pages/NeedyManagement";
 import NotFound from "./pages/NotFound";
-import { ProtectedRoute, SignIn, SignUp } from "./pages/auth";
 
 const App = () => {
   const { user } = useAuthStore();
@@ -20,6 +21,7 @@ const App = () => {
         <Route index element={<Index />} />
         <Route path="case-management" element={<CaseManagement />} />
         <Route path="add-case" element={<AddCase />} />
+        <Route path="edit-case/:id" element={<EditCase />} />
 
         <Route path="needy" element={<NeedyManagement />} />
         {/* <Route path="case-management" element={<CaseManagement />} /> */}

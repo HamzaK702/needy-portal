@@ -84,12 +84,12 @@ const CaseManagement = () => {
         <div>
           <h1 className="text-3xl font-bold">Case Management</h1>
           <p className="text-muted-foreground mt-1">
-            Create and track your donation requests
+            Create and track your donation cases
           </p>
         </div>
         <Link to="/add-case">
           <Button className="bg-gradient-primary">
-            <Plus className="w-4 h-4 mr-2" /> Create New Request
+            <Plus className="w-4 h-4 mr-2" /> Create New Case
           </Button>
         </Link>
       </div>
@@ -100,7 +100,7 @@ const CaseManagement = () => {
           <Clock className="w-8 h-8 text-warning" />
           <div>
             <p className="text-2xl font-bold">{activeCount}</p>
-            <p className="text-sm text-muted-foreground">Active Requests</p>
+            <p className="text-sm text-muted-foreground">Active Cases</p>
           </div>
         </Card>
         <Card className="p-4 flex items-center gap-3">
@@ -133,7 +133,7 @@ const CaseManagement = () => {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">All Requests</TabsTrigger>
+          <TabsTrigger value="all">All Cases</TabsTrigger>
           <TabsTrigger value="active">Active ({activeCount})</TabsTrigger>
           <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
           <TabsTrigger value="fulfilled">
