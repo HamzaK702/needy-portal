@@ -10,12 +10,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 import { signupCaretaker } from "@/supabase/auth/signup";
 import { Eye, EyeOff, Heart, Lock, Mail, Phone, User } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 type SignupValues = {
   fullName: string;
@@ -41,11 +41,16 @@ export default function SignupForm() {
     try {
       const result = await signupCaretaker(data);
       if (result.success) {
-        toast("Account created! Please verify your email to continue.");
+        toast({
+          title: "Account created! Please verify your email to continue.",
+        });
         navigate("/sign-in");
       }
     } catch (error: any) {
-      toast(error.message || "Something went wrong");
+      toast({
+        title: error.message || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 

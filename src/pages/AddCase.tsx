@@ -18,58 +18,21 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { citiesOfPakistan } from "@/lib/constant";
+import { FormValues } from "@/lib/type";
 import { useAuthStore } from "@/store/useAuthStore";
 import { addCase } from "@/supabase/cases/addCase";
 import { FileText, MapPin, Upload, User } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-
-const citiesOfPakistan = [
-  "Karachi",
-  "Lahore",
-  "Islamabad",
-  "Rawalpindi",
-  "Faisalabad",
-  "Multan",
-  "Hyderabad",
-  "Peshawar",
-  "Quetta",
-  "Sialkot",
-  "Gujranwala",
-  "Bahawalpur",
-  "Sukkur",
-  "Mardan",
-  "Abbottabad",
-  "Jhelum",
-  "Okara",
-  "Sargodha",
-  "Sheikhupura",
-  "Mirpur Khas",
-  "Rahim Yar Khan",
-];
-
-type FormValues = {
-  name: string;
-  cnic: string;
-  phone: string;
-  address: string;
-  title: string;
-  shortStory: string;
-  fullStory: string;
-  category: string;
-  urgencyLevel: string;
-  requiredAmount: number;
-  familyMembers: number;
-  monthlyIncome?: number;
-  isRecurring: boolean;
-  recurringDuration?: number;
-  location: string;
-  docs: { docName: string; file: File | null }[];
-};
+import { useNavigate } from "react-router-dom";
 
 const AddCase = () => {
   const { user } = useAuthStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  // react hook form setup
   const {
     register,
     control,
@@ -107,20 +70,24 @@ const AddCase = () => {
 
   const onSubmit = async (data: FormValues) => {
     try {
+      setLoading(true);
       await addCase({
         userId: user?.id,
         ...data,
       });
+
+      setLoading(false);
       toast({
         title: "Case Added Successfully",
         description: "The new case has been created.",
       });
+      navigate("/case-management");
       reset();
     } catch (err: any) {
+      setLoading(false);
       toast({
-        title: "Error",
-        description: err.message,
         variant: "destructive",
+        title: "Something Went Wrong",
       });
     }
   };
@@ -441,7 +408,7 @@ const AddCase = () => {
           type="submit"
           className="flex justify-self-end bg-primary hover:bg-primary/90"
         >
-          Create Case
+          {loading ? "Creating..." : "Create Case"}
         </Button>
       </form>
     </div>

@@ -1,5 +1,4 @@
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
-import CaseCard from "@/components/dashboard/CaseCard";
 import MetricCard from "@/components/dashboard/MetricCard";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Heart, Plus, TrendingUp, Users } from "lucide-react";
@@ -61,7 +60,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <CaseCard
+          {/* <CaseCard
             title="Fatima's Education Fund"
             category="Education"
             location="Karachi"
@@ -87,7 +86,7 @@ const Dashboard = () => {
             raised={18000}
             target={30000}
             image="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&h=300&fit=crop&crop=faces"
-          />
+          /> */}
         </div>
       </div>
 

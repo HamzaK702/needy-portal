@@ -32,7 +32,6 @@ type AddCaseFormData = {
 export async function addCase(formData: AddCaseFormData) {
   // 1. Get session
   const { data } = await supabase.auth.getSession();
-  console.log("🚀 ~ addCase ~ data:", data);
   const session = data?.session;
   if (!session) {
     throw new Error("No active session found");

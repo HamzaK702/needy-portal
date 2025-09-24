@@ -10,13 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/store/useAuthStore";
 import { completeCaretakerProfile } from "@/supabase/auth/welcome";
 import { supabase } from "@/supabase/client";
 import { LogOutIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 type WelcomeValues = {
   cnicFile: FileList;
@@ -52,9 +52,12 @@ export default function WelcomeForm() {
       await completeCaretakerProfile(formData);
 
       Navigate("/");
-      toast("Profile completed 🎉");
+      toast({ title: "Profile completed 🎉" });
     } catch (err: any) {
-      alert(err.message || "Something went wrong");
+      toast({
+        title: err.message || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 

@@ -10,12 +10,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/supabase/client";
 import { Eye, EyeOff, Heart, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 type SigninValues = {
   email: string;
@@ -44,13 +44,19 @@ export default function SigninForm() {
       if (error) throw error;
 
       if (loginData.user?.email_confirmed_at) {
-        toast("✅ Login successful, welcome back!");
+        toast({ title: "Login successful, welcome back!" });
         navigate("/");
       } else {
-        toast("⚠️ Please verify your email before signing in.");
+        toast({
+          title: "Please verify your email before signing in.",
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
-      toast(error.message || "Invalid login credentials");
+      toast({
+        title: error.message || "Invalid login credentials",
+        variant: "destructive",
+      });
     }
   };
 

@@ -25,7 +25,7 @@ export async function deleteCase(caseId: string) {
     }
 
     // 3️⃣ Wait for propagation (key fix from SO + docs)
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // 3-second delay; adjust if needed
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // 3-second delay; adjust if needed
 
     // 4️⃣ Delete the empty folder (with retry logic)
     let folderDeleted = false;
