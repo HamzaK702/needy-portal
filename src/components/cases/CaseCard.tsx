@@ -8,6 +8,17 @@ import { deleteCase } from "@/supabase/cases/deleteCase";
 import { Edit, Eye, FileTextIcon, TrashIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -227,13 +238,35 @@ const CaseCard: React.FC<CaseCardProps> = ({ request, onDelete }) => {
         >
           <Edit className="w-3 h-3 mr-1" /> Edit Case
         </Button>
-        <Button
-          size="sm"
-          className="flex items-center justify-center w-[10%] hover:bg-red-600 bg-red-500"
-          onClick={() => handleDelete(request)}
-        >
-          <TrashIcon className="w-3 h-3" />
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              size="sm"
+              className="flex items-center justify-center w-[10%] hover:bg-red-600 bg-red-500"
+            >
+              <TrashIcon className="w-3 h-3" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the case
+                <span className="font-semibold"> "{request.title || 'Untitled'}"</span> 
+                and remove all associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleDelete(request)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete Case
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Card>
   );

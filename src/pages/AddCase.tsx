@@ -54,7 +54,6 @@ const AddCase = () => {
       urgencyLevel: "",
       requiredAmount: 0,
       familyMembers: 0,
-      monthlyIncome: undefined,
       isRecurring: false,
       recurringDuration: undefined,
       location: "",
@@ -325,7 +324,13 @@ const AddCase = () => {
             {isRecurring && (
               <div className="space-y-2">
                 <Label>Recurring Duration (months)</Label>
-                <Input type="number" {...register("recurringDuration")} />
+                <Input
+                  type="number"
+                  {...register("recurringDuration", {
+                    setValueAs: (val) => (val === "" ? null : Number(val)),
+                    valueAsNumber: true,
+                  })}
+                />
               </div>
             )}
           </CardContent>
@@ -407,6 +412,7 @@ const AddCase = () => {
         <Button
           type="submit"
           className="flex justify-self-end bg-primary hover:bg-primary/90"
+          disabled={loading}
         >
           {loading ? "Creating..." : "Create Case"}
         </Button>

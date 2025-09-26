@@ -11,13 +11,16 @@ type Profile = {
 type AuthState = {
   user: any | null;
   profile: Profile | null;
+  isLoading: boolean;
   setUser: (user: any | null) => Promise<void>;
+  setLoading: (loading: boolean) => void;
   reset: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   profile: null,
+  isLoading: true,
 
   // 👇 user set karte hi uska profile bhi auto fetch hoga
   setUser: async (user) => {
@@ -41,5 +44,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  reset: () => set({ user: null, profile: null }),
+  setLoading: (loading) => set({ isLoading: loading }),
+
+  reset: () => set({ user: null, profile: null, isLoading: true }),
 }));

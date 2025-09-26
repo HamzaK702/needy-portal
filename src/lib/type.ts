@@ -10,30 +10,35 @@ export type FormValues = {
   urgencyLevel: string;
   requiredAmount: number;
   familyMembers: number;
-  monthlyIncome?: number;
   isRecurring: boolean;
   recurringDuration?: number;
   location: string;
   docs: { docName: string; file: File | null }[];
 };
 
-export type EditFormValues = {
+export type EditCaseFormDoc = {
+  name: string;
+  url: string;
+  file?: File | null;
+  isOldOne: boolean;
+};
+export type EditCaseFormValues = {
   name: string;
   cnic: string;
   phone: string;
   address: string;
   title: string;
-  shortStory: string;
-  fullStory: string;
+  short_story: string;
+  full_story: string;
   category: string;
-  urgencyLevel: string;
-  requiredAmount: number;
-  familyMembers: number;
-  monthlyIncome?: number;
-  isRecurring: boolean;
-  recurringDuration?: number;
+  urgency_level: string;
+  required_amount: number;
+  family_members: number;
+  is_recurring: boolean;
+  recurring_duration?: number;
   location: string;
-  docs: { docName: string; file: File | null }[];
+  docs: EditCaseFormDoc[];
+  removedDocs: EditCaseFormDoc[];
   status: string;
 };
 

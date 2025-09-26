@@ -1,3 +1,4 @@
+import Loading from "@/components/ui/loading";
 import { useAuthStore } from "@/store/useAuthStore";
 import { supabase } from "@/supabase/client";
 import { useEffect, useState } from "react";
@@ -7,7 +8,7 @@ import Layout from "../Layout";
 
 const ProtectedRoute = () => {
   const [loading, setLoading] = useState(true);
-  const { user } = useAuthStore();
+  const { user, isLoading } = useAuthStore();
   const [isProfileCompleted, setIsProfileCompleted] = useState(null);
 
   useEffect(() => {
@@ -44,9 +45,11 @@ const ProtectedRoute = () => {
     user && checkProfile();
   }, [user]);
 
+  // Wait for auth loading to complete first
+  if (isLoading) return <Loading text="Authenticating..." />;
   if (!user) return <Navigate to="/sign-in" />;
-  if (loading) return <p>Loading...</p>;
-  return isProfileCompleted ? <Layout userData={user} /> : <Welcome />;
+  if (loading) return <Loading text="Loading profile..." />;
+  return isProfileCompleted ? <Layout /> : <Welcome />;
 };
 
 export default ProtectedRoute;

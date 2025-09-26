@@ -3,16 +3,19 @@ import { supabase } from "@/supabase/client";
 import { useEffect } from "react";
 
 export function useSupabaseAuth() {
-  const { setUser } = useAuthStore();
+  const { setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
     const fetchUser = async () => {
+      setLoading(true);
       const { data, error } = await supabase.auth.getSession();
       if (error) {
         console.error("Error fetching session:", error);
-        return;
+        setUser(null);
+      } else {
+        setUser(data.session?.user || null);
       }
-      setUser(data.session?.user || null);
+      setLoading(false);
     };
 
     fetchUser();
@@ -27,5 +30,5 @@ export function useSupabaseAuth() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [setUser]);
+  }, [setUser, setLoading]);
 }

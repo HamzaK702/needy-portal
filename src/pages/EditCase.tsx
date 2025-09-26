@@ -19,68 +19,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { citiesOfPakistan } from "@/lib/constant";
-import { EditFormValues } from "@/lib/type";
+import { EditCaseFormDoc, EditCaseFormValues } from "@/lib/type";
+import { updateCase } from "@/supabase/cases/updateCase";
 import { supabase } from "@/supabase/client"; // Assuming Supabase client is imported
 import { FileText, MapPin, Upload, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-// Utility function to convert snake_case to camelCase
-const snakeToCamel = (str: string) =>
-  str.replace(/(_\w)/g, (match) => match[1].toUpperCase());
-
-// Utility function to convert camelCase to snake_case
-const camelToSnake = (str: string) =>
-  str.replace(/([A-Z])/g, "_$1").toLowerCase();
-
-// Map database fields (snake_case) to form fields (camelCase)
-const mapDbToForm = (dbData: any): EditFormValues => ({
-  name: dbData.name || "",
-  cnic: dbData.cnic || "",
-  phone: dbData.phone || "",
-  address: dbData.address || "",
-  title: dbData.title || "",
-  shortStory: dbData.short_story || "",
-  fullStory: dbData.full_story || "",
-  category: dbData.category || "",
-  urgencyLevel: dbData.urgency_level || "",
-  requiredAmount: dbData.required_amount || 0,
-  familyMembers: dbData.family_members || 0,
-  monthlyIncome: dbData.monthly_income || undefined,
-  isRecurring: dbData.is_recurring || false,
-  recurringDuration: dbData.recurring_duration || undefined,
-  location: dbData.location || "",
-  docs: dbData.docs?.map((doc: { doc_name: string }) => ({
-    docName: doc.doc_name,
-    file: null, // Set file to null for edit mode
-  })) || [{ docName: "", file: null }],
-  status: dbData.status || "pending",
-});
-
-// Map form fields (camelCase) to database fields (snake_case)
-const mapFormToDb = (formData: EditFormValues) => ({
-  name: formData.name,
-  cnic: formData.cnic,
-  phone: formData.phone,
-  address: formData.address,
-  title: formData.title,
-  short_story: formData.shortStory,
-  full_story: formData.fullStory,
-  category: formData.category,
-  urgency_level: formData.urgencyLevel,
-  required_amount: formData.requiredAmount,
-  family_members: formData.familyMembers,
-  monthly_income: formData.monthlyIncome,
-  is_recurring: formData.isRecurring,
-  recurring_duration: formData.recurringDuration,
-  location: formData.location,
-  docs: formData.docs.map((doc) => ({
-    doc_name: doc.docName,
-    file: doc.file, // File will be handled separately if uploading
-  })),
-  status: formData.status,
-});
+// Local form types aligned to DB (snake_case) and including optional file for docs UI
 
 const EditCase = () => {
   const { id } = useParams();
@@ -96,25 +43,25 @@ const EditCase = () => {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<EditFormValues>({
+  } = useForm<EditCaseFormValues>({
     defaultValues: {
       name: "",
       cnic: "",
       phone: "",
       address: "",
       title: "",
-      shortStory: "",
-      fullStory: "",
+      short_story: "",
+      full_story: "",
       category: "",
-      urgencyLevel: "",
-      requiredAmount: 0,
-      familyMembers: 0,
-      monthlyIncome: undefined,
-      isRecurring: false,
-      recurringDuration: undefined,
+      urgency_level: "",
+      required_amount: 0,
+      family_members: 0,
+      is_recurring: false,
+      recurring_duration: undefined,
       location: "",
-      docs: [{ docName: "", file: null }],
-      status: "pending",
+      docs: [{ name: "", file: null, url: "", isOldOne: false }],
+      removedDocs: [],
+      status: "active",
     },
   });
 
@@ -122,9 +69,13 @@ const EditCase = () => {
     control,
     name: "docs",
   });
-  const isRecurring = watch("isRecurring");
 
-  // 🟢 Fetch case details by ID from Supabase
+  const { fields: removedDocFields, append: removedDocAppend } = useFieldArray({
+    control,
+    name: "removedDocs",
+  });
+  const isRecurring = watch("is_recurring");
+
   useEffect(() => {
     async function fetchCase() {
       if (!id) {
@@ -144,9 +95,24 @@ const EditCase = () => {
 
         if (error) throw error;
 
-        // Map database fields to form fields
-        const formData = mapDbToForm(data);
-        reset(formData); // Populate form with fetched data
+        // Add file: null to each doc for form handling
+        if (data.docs) {
+          data.docs = data.docs.map((doc: any) => ({
+            ...doc,
+            file: null,
+            isOldOne: true,
+          }));
+        } else {
+          data.docs = [
+            {
+              name: "",
+              file: null,
+              url: "",
+              isOldOne: false,
+            },
+          ];
+        }
+        reset(data);
       } catch (err) {
         toast({
           variant: "destructive",
@@ -159,32 +125,24 @@ const EditCase = () => {
     fetchCase();
   }, [id, reset, toast]);
 
-  const onSubmit = async (data: EditFormValues) => {
+  const onSubmit = async (data: EditCaseFormValues) => {
     try {
       setLoading(true);
-      // Map form data to database structure
-      const dbData = mapFormToDb(data);
-      console.log("Updated case:", { id, ...dbData });
-      // Optionally, add Supabase update logic here
-      /*
-      const { error } = await supabase
-        .from("cases")
-        .update(dbData)
-        .eq("id", id);
-      
-      if (error) throw error;
-      */
-      setLoading(false);
+      await updateCase(data, id);
       toast({ title: "Case Updated Successfully" });
-      navigate("/case-management");
-    } catch (err) {
       setLoading(false);
-      toast({
-        variant: "destructive",
-        title: "Something Went Wrong",
-        description: "Failed to update case. Please try again.",
-      });
+      navigate("/case-management");
+    } catch (error) {
+      setLoading(false);
+      toast({ title: error || "Something went wrong" });
     }
+  };
+
+  const preRemoveFilter = (field: EditCaseFormDoc, idx: number) => {
+    if (field.isOldOne) {
+      removedDocAppend(field);
+    }
+    remove(idx);
   };
 
   return (
@@ -220,7 +178,13 @@ const EditCase = () => {
               <div className="space-y-2">
                 <Label>CNIC *</Label>
                 <Input
-                  {...register("cnic", { required: "CNIC is required" })}
+                  {...register("cnic", {
+                    required: "CNIC is required",
+                    pattern: {
+                      value: /^[0-9]{13}$/,
+                      message: "CNIC must be exactly 13 digits",
+                    },
+                  })}
                 />
                 {errors.cnic && (
                   <p className="text-sm text-red-500">{errors.cnic.message}</p>
@@ -229,15 +193,34 @@ const EditCase = () => {
               <div className="space-y-2">
                 <Label>Phone *</Label>
                 <Input
-                  {...register("phone", { required: "Phone is required" })}
+                  {...register("phone", {
+                    required: "Phone is required",
+                    pattern: {
+                      value: /^[1-9][0-9]{9}$/,
+                      message: "Phone must be 10 digits without 0 at start",
+                    },
+                  })}
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-500">{errors.phone.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Family Members</Label>
-                <Input type="number" {...register("familyMembers")} />
+                <Label>Family Members *</Label>
+                <Input
+                  type="number"
+                  {...register("family_members", {
+                    required: "Family members count is required",
+                    valueAsNumber: true,
+                    min: { value: 0, message: "Must be between 0 and 20" },
+                    max: { value: 20, message: "Must be between 0 and 20" },
+                  })}
+                />
+                {errors.family_members && (
+                  <p className="text-sm text-red-500">
+                    {errors.family_members.message}
+                  </p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
@@ -302,7 +285,7 @@ const EditCase = () => {
               />
               <Controller
                 control={control}
-                name="urgencyLevel"
+                name="urgency_level"
                 rules={{ required: "Urgency is required" }}
                 render={({ field }) => (
                   <div className="space-y-2">
@@ -317,9 +300,9 @@ const EditCase = () => {
                         <SelectItem value="high">High</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.urgencyLevel && (
+                    {errors.urgency_level && (
                       <p className="text-sm text-red-500">
-                        {errors.urgencyLevel.message}
+                        {errors.urgency_level.message}
                       </p>
                     )}
                   </div>
@@ -330,14 +313,19 @@ const EditCase = () => {
                 name="status"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Label>Mark as fulfilled?</Label>
+                    <Select
+                      onValueChange={(val) =>
+                        field.onChange(val === "yes" ? "fulfilled" : "active")
+                      }
+                      value={field.value === "fulfilled" ? "yes" : "no"}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder="Select option" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="fulfilled">Fulfilled</SelectItem>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -349,26 +337,28 @@ const EditCase = () => {
               <Label>Required Amount (PKR) *</Label>
               <Input
                 type="number"
-                {...register("requiredAmount", {
+                {...register("required_amount", {
                   required: "Required amount is required",
+                  valueAsNumber: true,
+                  min: { value: 1, message: "Amount must be greater than 0" },
                 })}
               />
-              {errors.requiredAmount && (
+              {errors.required_amount && (
                 <p className="text-sm text-red-500">
-                  {errors.requiredAmount.message}
+                  {errors.required_amount.message}
                 </p>
               )}
             </div>
             <div className="space-y-2">
               <Label>Short Story *</Label>
               <Textarea
-                {...register("shortStory", {
+                {...register("short_story", {
                   required: "Short story is required",
                 })}
               />
-              {errors.shortStory && (
+              {errors.short_story && (
                 <p className="text-sm text-red-500">
-                  {errors.shortStory.message}
+                  {errors.short_story.message}
                 </p>
               )}
             </div>
@@ -376,13 +366,13 @@ const EditCase = () => {
               <Label>Full Story *</Label>
               <Textarea
                 className="min-h-[150px]"
-                {...register("fullStory", {
+                {...register("full_story", {
                   required: "Full story is required",
                 })}
               />
-              {errors.fullStory && (
+              {errors.full_story && (
                 <p className="text-sm text-red-500">
-                  {errors.fullStory.message}
+                  {errors.full_story.message}
                 </p>
               )}
             </div>
@@ -391,7 +381,7 @@ const EditCase = () => {
             <div className="flex items-center space-x-2">
               <Controller
                 control={control}
-                name="isRecurring"
+                name="is_recurring"
                 render={({ field }) => (
                   <Checkbox
                     checked={field.value}
@@ -404,7 +394,7 @@ const EditCase = () => {
             {isRecurring && (
               <div className="space-y-2">
                 <Label>Recurring Duration (months)</Label>
-                <Input type="number" {...register("recurringDuration")} />
+                <Input type="number" {...register("recurring_duration")} />
               </div>
             )}
           </CardContent>
@@ -426,15 +416,18 @@ const EditCase = () => {
                 register={register}
                 setValue={setValue}
                 errors={errors}
-                remove={() => remove(index)}
+                remove={() => preRemoveFilter(field, index)}
                 disabledRemove={fields.length === 1}
+                doc={watch(`docs.${index}` as any)}
               />
             ))}
             {fields.length < 5 && (
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => append({ docName: "", file: null })}
+                onClick={() =>
+                  append({ name: "", file: null, url: "", isOldOne: false })
+                }
               >
                 + Add Document
               </Button>
@@ -481,7 +474,11 @@ const EditCase = () => {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="bg-primary hover:bg-primary/90">
+        <Button
+          type="submit"
+          className="bg-primary hover:bg-primary/90 flex justify-self-end"
+          disabled={loading}
+        >
           {loading ? "Updating..." : "Update Case"}
         </Button>
       </form>
@@ -489,7 +486,7 @@ const EditCase = () => {
   );
 };
 
-// DocumentField component (edit mode → file not required)
+// DocumentField component (edit mode → file optional; show existing url to view)
 const DocumentField = ({
   index,
   register,
@@ -497,6 +494,7 @@ const DocumentField = ({
   errors,
   remove,
   disabledRemove,
+  doc,
 }: {
   index: number;
   register: any;
@@ -504,16 +502,67 @@ const DocumentField = ({
   errors: any;
   remove: () => void;
   disabledRemove: boolean;
+  doc: any;
 }) => {
+  useEffect(() => {
+    // Only require file for new documents (not existing ones)
+    if (!doc?.isOldOne) {
+      register(`docs.${index}.file`, { required: "File is required" });
+    }
+  }, [register, index, doc?.isOldOne]);
+
   return (
-    <div className="flex gap-2 items-start">
-      <div className="flex-1">
-        <Input
-          placeholder="Document Name"
-          {...register(`docs.${index}.docName`)}
-        />
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
+          <Input
+            placeholder="Document Name"
+            {...register(`docs.${index}.name`, {
+              required: "Document name is required",
+            })}
+          />
+          {errors.docs?.[index]?.name && (
+            <p className="text-sm text-red-500 mt-0.5 ml-0.5">
+              {errors.docs[index].name?.message}
+            </p>
+          )}
+        </div>
+        {doc?.url ? (
+          <div className="flex items-center gap-2">
+            <Link
+              to={doc.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm underline"
+            >
+              View
+            </Link>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={remove}
+              disabled={disabledRemove}
+            >
+              Remove
+            </Button>
+          </div>
+        ) : (
+          <div>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={remove}
+              disabled={disabledRemove}
+            >
+              Remove
+            </Button>
+          </div>
+        )}
       </div>
-      <div>
+
+      <div className="flex gap-2 items-center">
         <Input
           type="file"
           accept="image/*,.pdf,.doc,.docx"
@@ -522,17 +571,16 @@ const DocumentField = ({
             setValue(`docs.${index}.file`, file, { shouldValidate: true });
           }}
         />
-      </div>
-      <div>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          onClick={remove}
-          disabled={disabledRemove}
-        >
-          Remove
-        </Button>
+        {doc?.url && (
+          <span className="text-xs text-muted-foreground">
+            Already uploaded. Select a file to replace.
+          </span>
+        )}
+        {!doc?.isOldOne && errors.docs?.[index]?.file && (
+          <p className="text-sm text-red-500">
+            {errors.docs[index].file?.message}
+          </p>
+        )}
       </div>
     </div>
   );

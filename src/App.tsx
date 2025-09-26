@@ -1,5 +1,6 @@
 import { useAuthStore } from "@/store/useAuthStore";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import Loading from "./components/ui/loading";
 import { useSupabaseAuth } from "./hooks/useSupabaseAuth";
 import AddCase from "./pages/AddCase";
 import { ProtectedRoute, SignIn, SignUp } from "./pages/auth";
@@ -11,9 +12,15 @@ import NeedyManagement from "./pages/NeedyManagement";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
-  const { user } = useAuthStore();
+  const { user, isLoading } = useAuthStore();
 
   useSupabaseAuth();
+  
+  // Show loading while auth is being checked
+  if (isLoading) {
+    return <Loading text="Initializing..." />;
+  }
+  
   return (
     <Routes>
       {/* Protected Routes */}
