@@ -39,7 +39,7 @@ export async function updateCase(formData: EditCaseFormValues, caseId: string) {
           session.access_token,
           doc.file,
           baseName,
-          `caretaker-portal/cases/${caseId}`
+          `needy-portal/cases/${caseId}`
         );
 
         // Track new upload for rollback

@@ -1,12 +1,12 @@
 // src/components/auth/SignupForm.tsx
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,7 +67,7 @@ export default function SignupForm() {
             Create your account
           </CardTitle>
           <CardDescription>
-            Join CareTaker Portal and start making a difference
+            Join Needy Portal and start making a difference
           </CardDescription>
         </CardHeader>
 

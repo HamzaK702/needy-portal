@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/store/useAuthStore";
 import { supabase } from "@/supabase/client";
 import { Eye, EyeOff, Heart, Lock, Mail } from "lucide-react";
 import { useState } from "react";
@@ -24,6 +25,7 @@ type SigninValues = {
 
 export default function SigninForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const { setRoleCheckingLoading, setLoading } = useAuthStore();
   const navigate = useNavigate();
 
   const {
@@ -34,25 +36,54 @@ export default function SigninForm() {
 
   const onSubmit = async (data: SigninValues) => {
     try {
-      const { data: loginData, error } = await supabase.auth.signInWithPassword(
-        {
+      // Step 1: Attempt to sign in
+      setLoading(true);
+      const { data: loginData, error: signInError } =
+        await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
-        }
-      );
-
-      if (error) throw error;
-
-      if (loginData.user?.email_confirmed_at) {
-        toast({ title: "Login successful, welcome back!" });
-        navigate("/");
-      } else {
-        toast({
-          title: "Please verify your email before signing in.",
-          variant: "destructive",
         });
+
+      if (signInError) {
+        setLoading(false);
+        throw signInError;
       }
+
+      const user = loginData.user;
+
+      // Step 2: Check if email is verified
+      if (!user?.email_confirmed_at) {
+        setLoading(false);
+        await supabase.auth.signOut();
+        throw new Error("Please verify your email before signing in.");
+      }
+
+      // Step 3: Fetch the user’s role from profiles
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        setLoading(false);
+        await supabase.auth.signOut();
+        throw new Error("Failed to verify user profile.");
+      }
+
+      // Step 4: Check if role matches expected portal (e.g., needy)
+      if (profile.role !== "needy") {
+        await supabase.auth.signOut();
+        setLoading(false);
+        throw new Error(`This account is registered as a ${profile.role}.`);
+      }
+
+      // Step 5: Success
+      setLoading(false);
+      toast({ title: "Login successful, welcome back!" });
+      navigate("/");
     } catch (error: any) {
+      setLoading(false);
       toast({
         title: error.message || "Invalid login credentials",
         variant: "destructive",
@@ -71,7 +102,7 @@ export default function SigninForm() {
           </div>
           <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
           <CardDescription>
-            Sign in to continue using CareTaker Portal
+            Sign in to continue using Needy Portal
           </CardDescription>
         </CardHeader>
 

@@ -53,7 +53,7 @@ export async function addCase(formData: AddCaseFormData) {
           session.access_token,
           doc.file,
           baseName,
-          `caretaker-portal/cases/${caseId}`
+          `needy-portal/cases/${caseId}`
         );
 
         // 👇 store the exact Cloudinary public_id, not the one you built
@@ -101,7 +101,7 @@ export async function addCase(formData: AddCaseFormData) {
     try {
       await deleteFolderViaEdge(
         session.access_token,
-        `caretaker-portal/cases/${caseId}`
+        `needy-portal/cases/${caseId}`
       );
     } catch (cleanupError) {
       console.error("Failed to clean up Cloudinary file:", cleanupError);

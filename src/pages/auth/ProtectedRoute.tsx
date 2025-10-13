@@ -8,15 +8,15 @@ import Layout from "../Layout";
 
 const ProtectedRoute = () => {
   const [loading, setLoading] = useState(true);
-  const { user, isLoading } = useAuthStore();
-  const [isProfileCompleted, setIsProfileCompleted] = useState(null);
+  const { user, isLoading, isProfileCompleted, setProfileCompleted } =
+    useAuthStore();
 
   useEffect(() => {
     const checkProfile = async () => {
       // 1. Check localStorage first
       const cached = localStorage.getItem(`${user.id}_isProfileCompleted`);
       if (cached !== null) {
-        setIsProfileCompleted(cached === "true");
+        setProfileCompleted(cached === "true");
         setLoading(false); // ✅ stop loading as soon as we have data
         return;
       }
@@ -30,13 +30,13 @@ const ProtectedRoute = () => {
 
       if (error) {
         console.error("Profile fetch error:", error);
-        setIsProfileCompleted(false); // fallback
+        setProfileCompleted(false); // fallback
       } else if (data) {
         localStorage.setItem(
           `${user.id}_isProfileCompleted`,
           data.isprofilecompleted
         );
-        setIsProfileCompleted(data.isprofilecompleted);
+        setProfileCompleted(data.isprofilecompleted);
       }
 
       setLoading(false); // ✅ only set loading false after data is ready

@@ -5,22 +5,21 @@ import { useSupabaseAuth } from "./hooks/useSupabaseAuth";
 import AddCase from "./pages/AddCase";
 import { ProtectedRoute, SignIn, SignUp } from "./pages/auth";
 import CaseManagement from "./pages/CaseManagement";
-import DonorRelations from "./pages/DonorRelations";
 import EditCase from "./pages/EditCase";
 import Index from "./pages/Index";
-import NeedyManagement from "./pages/NeedyManagement";
+// Removed unused routes: NeedyManagement, DonorRelations, Reports, Financial
 import NotFound from "./pages/NotFound";
 
 const App = () => {
   const { user, isLoading } = useAuthStore();
 
   useSupabaseAuth();
-  
+
   // Show loading while auth is being checked
   if (isLoading) {
     return <Loading text="Initializing..." />;
   }
-  
+
   return (
     <Routes>
       {/* Protected Routes */}
@@ -29,18 +28,6 @@ const App = () => {
         <Route path="case-management" element={<CaseManagement />} />
         <Route path="add-case" element={<AddCase />} />
         <Route path="edit-case/:id" element={<EditCase />} />
-
-        <Route path="needy" element={<NeedyManagement />} />
-        {/* <Route path="case-management" element={<CaseManagement />} /> */}
-        <Route path="donors" element={<DonorRelations />} />
-        <Route
-          path="reports"
-          element={<div className="p-6">Reports - Coming Soon</div>}
-        />
-        <Route
-          path="financial"
-          element={<div className="p-6">Financial - Coming Soon</div>}
-        />
       </Route>
 
       {/* UnProtected Routes */}

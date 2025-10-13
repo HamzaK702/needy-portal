@@ -3,29 +3,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthStore";
 import { supabase } from "@/supabase/client";
-import {
-  ClipboardList,
-  DollarSign,
-  FileText,
-  Heart,
-  LayoutDashboard,
-  LogOut,
-  LucideFolderPlus,
-  Settings,
-  UserPlus,
-  Users,
-} from "lucide-react";
+import { ClipboardList, Heart, LayoutDashboard, LogOut, LucideFolderPlus, Settings } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Case Management", href: "/case-management", icon: ClipboardList },
   { name: "Add New Case", href: "/add-case", icon: LucideFolderPlus },
-  { name: "Browse Cases", href: "/cases", icon: Users },
-  { name: "Needy Management", href: "/needy", icon: UserPlus },
-  { name: "Donor Relations", href: "/donors", icon: Heart },
-  { name: "Reports", href: "/reports", icon: FileText },
-  { name: "Financial", href: "/financial", icon: DollarSign },
 ];
 
 const Sidebar = () => {
@@ -44,7 +28,7 @@ const Sidebar = () => {
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Heart className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-semibold text-lg">CaretakerPortal</span>
+          <span className="font-semibold text-lg">Needy Portal</span>
         </div>
 
         {/* Navigation */}
@@ -82,9 +66,7 @@ const Sidebar = () => {
               <p className="text-sm font-medium truncate">
                 {user?.identities[0]?.identity_data?.full_name}
               </p>
-              <p className="text-xs text-muted-foreground truncate">
-                Caretaker
-              </p>
+              <p className="text-xs text-muted-foreground truncate">Needy</p>
             </div>
           </div>
           <div className="flex gap-2 mt-3">

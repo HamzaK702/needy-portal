@@ -12,7 +12,7 @@ export async function deleteCase(caseId: string) {
     const accessToken = sessionData.session.access_token;
     const userId = sessionData.session.user.id;
 
-    const folderPrefix = `caretaker-portal/cases/${caseId}/`; // Prefix with trailing / for folder deletion
+    const folderPrefix = `needy-portal/cases/${caseId}/`; // Prefix with trailing / for folder deletion
 
     // 2️⃣ Delete all resources by prefix (handles all files in folder)
     let deletionErrors: string[] = [];
@@ -33,10 +33,7 @@ export async function deleteCase(caseId: string) {
     const maxRetries = 3;
     while (!folderDeleted && retryCount < maxRetries) {
       try {
-        await deleteFolderViaEdge(
-          accessToken,
-          `caretaker-portal/cases/${caseId}`
-        );
+        await deleteFolderViaEdge(accessToken, `needy-portal/cases/${caseId}`);
         console.log(`Folder deleted: caretaker-portal/cases/${caseId}`);
         folderDeleted = true;
       } catch (folderErr: any) {

@@ -16,7 +16,7 @@ export async function signupCaretaker(formData: SignupFormData) {
       data: {
         full_name: formData.fullName,
         phone: formData.phone,
-        role: "caretaker",
+        role: "needy",
       },
     },
   });

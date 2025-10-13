@@ -1,7 +1,7 @@
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
 import MetricCard from "@/components/dashboard/MetricCard";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Heart, Plus, TrendingUp, Users } from "lucide-react";
+import { CheckCircle, FileText, Heart, TrendingUp, Upload } from "lucide-react";
 
 const Dashboard = () => {
   return (
@@ -9,88 +9,78 @@ const Dashboard = () => {
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Welcome back, Ahmed!</h1>
+          <h1 className="text-3xl font-bold">Welcome!</h1>
           <p className="text-muted-foreground mt-1">
-            Your dedication is changing lives. Here's your impact overview.
+            Track your support requests, document approvals, and donations here.
           </p>
         </div>
         <Button className="bg-gradient-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Case
+          <Upload className="w-4 h-4 mr-2" />
+          Upload New Document
         </Button>
       </div>
 
-      {/* Metrics Grid */}
+      {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
-          title="Active Cases"
-          value="24"
-          change="+3 new this month"
-          changeType="positive"
-          icon={Users}
+          title="Case Status"
+          value="In Review"
+          change="Documents under verification"
+          changeType="neutral"
+          icon={FileText}
         />
         <MetricCard
-          title="Total Raised"
-          value="$8,450"
-          change="+15% from last month"
+          title="Funds Raised"
+          value="₨ 24,500"
+          change="+₨ 2,000 this week"
           changeType="positive"
           icon={Heart}
         />
         <MetricCard
-          title="Lives Impacted"
-          value="67"
-          change="Direct beneficiaries"
+          title="Disbursements"
+          value="₨ 18,000"
+          change="Released to your account"
           changeType="neutral"
           icon={TrendingUp}
         />
         <MetricCard
-          title="Success Rate"
-          value="89%"
-          change="+4% improvement"
+          title="Profile Completion"
+          value="100%"
+          change="All details verified"
           changeType="positive"
-          icon={AlertTriangle}
+          icon={CheckCircle}
         />
       </div>
 
-      {/* Featured Cases Section */}
+      {/* Support Updates */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Heart className="w-5 h-5 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Active Cases</h2>
+          <h2 className="text-xl font-semibold">Your Case Overview</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* <CaseCard
-            title="Fatima's Education Fund"
-            category="Education"
-            location="Karachi"
-            priority="High"
-            raised={37500}
-            target={50000}
-            image="https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=300&fit=crop&crop=faces"
-          />
-          <CaseCard
-            title="Medical Treatment for Ahmed"
-            category="Healthcare"
-            location="Lahore"
-            priority="Critical"
-            raised={36000}
-            target={80000}
-            image="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300&fit=crop"
-          />
-          <CaseCard
-            title="Widow Support Program"
-            category="Support"
-            location="Islamabad"
-            priority="Medium"
-            raised={18000}
-            target={30000}
-            image="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&h=300&fit=crop&crop=faces"
-          /> */}
+        <div className="bg-card border rounded-lg p-6 text-sm text-muted-foreground space-y-3">
+          <p>
+            <span className="font-semibold text-foreground">Case Type:</span>{" "}
+            Widow Support Program
+          </p>
+          <p>
+            <span className="font-semibold text-foreground">
+              Current Status:
+            </span>{" "}
+            Awaiting approval from admin team.
+          </p>
+          <p>
+            <span className="font-semibold text-foreground">Last Updated:</span>{" "}
+            October 12, 2025
+          </p>
+          <p>
+            Once verified, you’ll receive updates here and via email or SMS.
+          </p>
         </div>
       </div>
 
-      {/* Activity and Quick Actions */}
+      {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ActivityFeed />
@@ -103,19 +93,19 @@ const Dashboard = () => {
                 variant="secondary"
                 className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white"
               >
-                Browse New Cases
+                View My Documents
               </Button>
               <Button
                 variant="secondary"
                 className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white"
               >
-                Upload Report
+                Update Personal Info
               </Button>
               <Button
                 variant="secondary"
                 className="w-full justify-start bg-white/10 hover:bg-white/20 border-0 text-white"
               >
-                Contact Donor
+                Contact Support
               </Button>
             </div>
           </div>
