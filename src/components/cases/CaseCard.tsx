@@ -5,7 +5,13 @@ import { toast } from "@/hooks/use-toast";
 import { calculateProgress } from "@/lib/helpers";
 import { Request } from "@/lib/type";
 import { deleteCase } from "@/supabase/cases/deleteCase";
-import { Edit, Eye, FileTextIcon, TrashIcon } from "lucide-react";
+import {
+  Edit,
+  Eye,
+  FileTextIcon,
+  LucideClipboardEdit,
+  TrashIcon,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
@@ -121,8 +127,11 @@ const CaseCard: React.FC<CaseCardProps> = ({ request, onDelete }) => {
       <div className="flex gap-2 max-w-full w-full">
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="flex-1">
-              <Eye className="w-4 h-4 mr-2" /> View Details
+            <Button
+              variant="outline"
+              className=" h-[36px] max-w-[180px] flex-1"
+            >
+              <Eye className="w-3 h-4 mr-2" /> View Details
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl w-full p-6">
@@ -178,7 +187,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ request, onDelete }) => {
                       {request.is_recurring
                         ? `Yes (Every ${
                             request.recurring_duration || "-"
-                          } days)`
+                          } Months)`
                         : "No"}
                     </p>
                   </div>
@@ -232,12 +241,19 @@ const CaseCard: React.FC<CaseCardProps> = ({ request, onDelete }) => {
         </Dialog>
 
         <Button
-          size="sm"
-          className="flex-1"
+          className="h-[36px] max-w-[180px] flex-1"
           onClick={() => navigate(`/edit-case/${request.id}`)}
         >
           <Edit className="w-3 h-3 mr-1" /> Edit Case
         </Button>
+
+        <Button
+          className="h-[36px] max-w-[160px] flex-1"
+          onClick={() => navigate(`/case-progress/${request.id}`)}
+        >
+          <LucideClipboardEdit className="w-3 h-3 mr-1" /> Add Progress
+        </Button>
+
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button

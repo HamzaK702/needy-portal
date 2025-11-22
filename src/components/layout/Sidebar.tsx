@@ -3,8 +3,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthStore";
 import { supabase } from "@/supabase/client";
-import { ClipboardList, Heart, LayoutDashboard, LogOut, LucideFolderPlus, Settings } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import {
+  ClipboardList,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  LucideFolderPlus,
+  Settings,
+} from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -20,6 +27,7 @@ const Sidebar = () => {
     supabase.auth.signOut();
   };
 
+  const Navigate = useNavigate();
   return (
     <div className="w-64">
       <div className="flex flex-col h-screen bg-white border-r border-border  fixed top-0 left-0 z-50 w-64">
@@ -55,7 +63,10 @@ const Sidebar = () => {
 
         {/* Profile Section */}
         <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+          <div
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+            onClick={() => Navigate("edit-profile")}
+          >
             <Avatar className="w-8 h-8">
               <AvatarImage src={profile?.profile_pic_url} />
               <AvatarFallback>

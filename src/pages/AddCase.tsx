@@ -243,6 +243,33 @@ const AddCase = () => {
               />
             </div>
 
+            {/* Recurring */}
+            <div className="flex items-center space-x-2">
+              <Controller
+                control={control}
+                name="isRecurring"
+                render={({ field }) => (
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(!!checked)}
+                  />
+                )}
+              />
+              <Label>Recurring Assistance</Label>
+            </div>
+            {isRecurring && (
+              <div className="space-y-2">
+                <Label>Recurring Duration (months)</Label>
+                <Input
+                  type="number"
+                  {...register("recurringDuration", {
+                    setValueAs: (val) => (val === "" ? null : Number(val)),
+                    valueAsNumber: true,
+                  })}
+                />
+              </div>
+            )}
+
             {/* Category and Urgency */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Controller
@@ -343,33 +370,6 @@ const AddCase = () => {
                 </p>
               )}
             </div>
-
-            {/* Recurring */}
-            <div className="flex items-center space-x-2">
-              <Controller
-                control={control}
-                name="isRecurring"
-                render={({ field }) => (
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(!!checked)}
-                  />
-                )}
-              />
-              <Label>Recurring Assistance</Label>
-            </div>
-            {isRecurring && (
-              <div className="space-y-2">
-                <Label>Recurring Duration (months)</Label>
-                <Input
-                  type="number"
-                  {...register("recurringDuration", {
-                    setValueAs: (val) => (val === "" ? null : Number(val)),
-                    valueAsNumber: true,
-                  })}
-                />
-              </div>
-            )}
           </CardContent>
         </Card>
 

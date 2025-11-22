@@ -128,8 +128,8 @@ export default function EditProfile() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Role Type */}
             <div className="space-y-2">
-              <Label>Profile Type</Label>
-              <span className="capitalize font-bold">{role ?? "-"}</span>
+              <Label>Profile Type </Label>
+              <span className="font-bold capitalize">{role ?? "-"}</span>
             </div>
 
             {/* Widow Section */}

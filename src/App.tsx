@@ -9,6 +9,7 @@ import EditCase from "./pages/EditCase";
 import Index from "./pages/Index";
 // Removed unused routes: NeedyManagement, DonorRelations, Reports, Financial
 import EditProfile from "./pages/auth/editProfile";
+import CaseProgress from "./pages/CaseProgress";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -30,6 +31,7 @@ const App = () => {
         <Route path="edit-profile" element={<EditProfile />} />
         <Route path="add-case" element={<AddCase />} />
         <Route path="edit-case/:id" element={<EditCase />} />
+        <Route path="case-progress/:caseId" element={<CaseProgress />} />
       </Route>
 
       {/* UnProtected Routes */}
