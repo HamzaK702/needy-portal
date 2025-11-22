@@ -251,8 +251,12 @@ const CaseCard: React.FC<CaseCardProps> = ({ request, onDelete }) => {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the case
-                <span className="font-semibold"> "{request.title || 'Untitled'}"</span> 
+                This action cannot be undone. This will permanently delete the
+                case
+                <span className="font-semibold">
+                  {" "}
+                  "{request.title || "Untitled"}"
+                </span>
                 and remove all associated data.
               </AlertDialogDescription>
             </AlertDialogHeader>

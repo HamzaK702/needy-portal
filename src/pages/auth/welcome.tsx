@@ -1,4 +1,3 @@
-// src/components/auth/WelcomeForm.tsx
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,8 +15,13 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { completeNeedyProfile } from "@/supabase/auth/welcome";
 import { supabase } from "@/supabase/client";
 import { LogOutIcon } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+
+type Child = {
+  bformNo: string;
+};
 
 type WelcomeValues = {
   roleType: "widow" | "orphan";
@@ -29,6 +33,7 @@ type WelcomeValues = {
   supportingDocument?: FileList;
   areaOfOperations: string;
   profilePic?: FileList;
+  children: Child[];
 };
 
 export default function WelcomeForm() {
@@ -38,19 +43,29 @@ export default function WelcomeForm() {
     control,
     formState: { errors, isSubmitting },
     watch,
+    setValue,
   } = useForm<WelcomeValues>({
-    mode: "onSubmit", // ✅ only validate when submitted
+    mode: "onSubmit",
+    defaultValues: { children: [] },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "children",
   });
 
   const roleType = watch("roleType");
+  // Reset children whenever roleType changes
+  useEffect(() => {
+    setValue("children", []);
+  }, [roleType, setValue]);
   const navigate = useNavigate();
   const { user, reset, setProfileCompleted } = useAuthStore();
 
   const onSubmit = async (data: WelcomeValues) => {
     try {
       if (!user) throw new Error("Not logged in");
-      const formData = data;
-      await completeNeedyProfile(user.id, formData);
+      await completeNeedyProfile(user.id, data);
       toast({ title: "Profile completed 🎉" });
       setProfileCompleted(true);
     } catch (err: any) {
@@ -112,7 +127,7 @@ export default function WelcomeForm() {
               )}
             </div>
 
-            {/* Conditional Fields */}
+            {/* Widow Section */}
             {roleType === "widow" && (
               <div className="space-y-4 border p-4 rounded-lg bg-secondary/5">
                 <h3 className="font-medium text-sm mb-2">
@@ -124,10 +139,7 @@ export default function WelcomeForm() {
                   <Input
                     type="file"
                     accept="image/*"
-                    {...register("cnicFile", {
-                      required:
-                        roleType === "widow" ? "CNIC file is required" : false,
-                    })}
+                    {...register("cnicFile")}
                   />
                   {errors.cnicFile && (
                     <p className="text-red-500 text-xs">
@@ -141,12 +153,7 @@ export default function WelcomeForm() {
                   <Input
                     type="file"
                     accept="image/*"
-                    {...register("spouseCnicFile", {
-                      required:
-                        roleType === "widow"
-                          ? "Spouse CNIC is required"
-                          : false,
-                    })}
+                    {...register("spouseCnicFile")}
                   />
                   {errors.spouseCnicFile && (
                     <p className="text-red-500 text-xs">
@@ -156,16 +163,11 @@ export default function WelcomeForm() {
                 </div>
 
                 <div>
-                  <Label>Death Certificate of Husband/Father</Label>
+                  <Label>Death Certificate of Husband</Label>
                   <Input
                     type="file"
                     accept="image/*"
-                    {...register("deathCertificate", {
-                      required:
-                        roleType === "widow"
-                          ? "Death certificate is required"
-                          : false,
-                    })}
+                    {...register("deathCertificate")}
                   />
                   {errors.deathCertificate && (
                     <p className="text-red-500 text-xs">
@@ -173,9 +175,71 @@ export default function WelcomeForm() {
                     </p>
                   )}
                 </div>
+
+                {/* 👶 Children Section */}
+                <div className="space-y-3 border-t pt-4">
+                  <h3 className="font-medium text-sm mb-2">
+                    Children Information
+                  </h3>
+
+                  {fields.map((child, index) => (
+                    <div
+                      key={child.id}
+                      className="flex flex-col md:flex-row md:items-end gap-3 border p-3 rounded-md"
+                    >
+                      <div className="flex-1">
+                        <Label>B-Form / NIC Number</Label>
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="Enter B-Form / NIC"
+                          {...register(`children.${index}.bformNo`, {
+                            required: "B-Form / NIC is required",
+                            minLength: {
+                              value: 13,
+                              message: "B-Form / NIC must be 13 digits",
+                            },
+                            maxLength: {
+                              value: 13,
+                              message: "B-Form / NIC must be 13 digits",
+                            },
+                            pattern: {
+                              value: /^[0-9]+$/,
+                              message: "Only numbers are allowed",
+                            },
+                          })}
+                        />
+
+                        {errors.children?.[index]?.bformNo && (
+                          <p className="text-red-500 text-xs mt-1.5 ml-1">
+                            {errors.children[index].bformNo?.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => remove(index)}
+                        className="self-start mt-6"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => append({ bformNo: "" })}
+                  >
+                    + Add Child
+                  </Button>
+                </div>
               </div>
             )}
 
+            {/* Orphan Section */}
             {roleType === "orphan" && (
               <div className="space-y-4 border p-4 rounded-lg bg-secondary/5">
                 <h3 className="font-medium text-sm mb-2">
@@ -187,12 +251,7 @@ export default function WelcomeForm() {
                   <Input
                     type="file"
                     accept="image/*"
-                    {...register("birthCertificate", {
-                      required:
-                        roleType === "orphan"
-                          ? "Birth certificate is required"
-                          : false,
-                    })}
+                    {...register("birthCertificate")}
                   />
                   {errors.birthCertificate && (
                     <p className="text-red-500 text-xs">
@@ -206,12 +265,7 @@ export default function WelcomeForm() {
                   <Input
                     type="file"
                     accept="image/*"
-                    {...register("deathCertificate", {
-                      required:
-                        roleType === "orphan"
-                          ? "Death certificate is required"
-                          : false,
-                    })}
+                    {...register("deathCertificate")}
                   />
                   {errors.deathCertificate && (
                     <p className="text-red-500 text-xs">
@@ -225,12 +279,7 @@ export default function WelcomeForm() {
                   <Input
                     type="text"
                     placeholder="Enter guardian name and relation"
-                    {...register("guardianInfo", {
-                      required:
-                        roleType === "orphan"
-                          ? "Guardian information is required"
-                          : false,
-                    })}
+                    {...register("guardianInfo")}
                   />
                   {errors.guardianInfo && (
                     <p className="text-red-500 text-xs">
@@ -244,18 +293,74 @@ export default function WelcomeForm() {
                   <Input
                     type="file"
                     accept="image/*"
-                    {...register("supportingDocument", {
-                      required:
-                        roleType === "orphan"
-                          ? "Supporting document is required"
-                          : false,
-                    })}
+                    {...register("supportingDocument")}
                   />
                   {errors.supportingDocument && (
                     <p className="text-red-500 text-xs">
                       {errors.supportingDocument.message}
                     </p>
                   )}
+                </div>
+
+                {/* 👶 Children Section */}
+                <div className="space-y-3 border-t pt-4">
+                  <h3 className="font-medium text-sm mb-2">
+                    Children Information
+                  </h3>
+
+                  {fields.map((child, index) => (
+                    <div
+                      key={child.id}
+                      className="flex flex-col md:flex-row md:items-end gap-3 border p-3 rounded-md"
+                    >
+                      <div className="flex-1">
+                        <Label>B-Form / NIC Number</Label>
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="Enter B-Form / NIC"
+                          {...register(`children.${index}.bformNo`, {
+                            required: "B-Form / NIC is required",
+                            minLength: {
+                              value: 13,
+                              message: "B-Form / NIC must be 13 digits",
+                            },
+                            maxLength: {
+                              value: 13,
+                              message: "B-Form / NIC must be 13 digits",
+                            },
+                            pattern: {
+                              value: /^[0-9]+$/,
+                              message: "Only numbers are allowed",
+                            },
+                          })}
+                        />
+
+                        {errors.children?.[index]?.bformNo && (
+                          <p className="text-red-500 text-xs mt-1.5 ml-1">
+                            {errors.children[index].bformNo?.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => remove(index)}
+                        className="self-start mt-6"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => append({ bformNo: "" })}
+                  >
+                    + Add Child
+                  </Button>
                 </div>
               </div>
             )}

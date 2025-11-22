@@ -12,6 +12,9 @@ type WelcomeValues = {
   supportingDocument?: FileList;
   areaOfOperations: string;
   profilePic?: FileList;
+  children?: {
+    bformNo: string;
+  }[];
 };
 
 export async function completeNeedyProfile(
@@ -43,37 +46,49 @@ export async function completeNeedyProfile(
   const uploads: Record<string, string | null> = {};
 
   if (formData.roleType === "widow") {
-    uploads.cnic_self_url = await uploadFile(
-      formData.cnicFile,
-      "cnic-self",
-      "cnic-self"
-    );
-    uploads.cnic_spouse_url = await uploadFile(
-      formData.spouseCnicFile,
-      "cnic-spouse",
-      "cnic-spouse"
-    );
-    uploads.death_certificate_spouse_url = await uploadFile(
-      formData.deathCertificate,
-      "death-certificates",
-      "death-spouse"
-    );
+    if (uploads.cnic_self_url) {
+      uploads.cnic_self_url = await uploadFile(
+        formData.cnicFile,
+        "cnic-self",
+        "cnic-self"
+      );
+    }
+    if (uploads.cnic_spouse_url) {
+      uploads.cnic_spouse_url = await uploadFile(
+        formData.spouseCnicFile,
+        "cnic-spouse",
+        "cnic-spouse"
+      );
+    }
+    if (uploads.death_certificate_spouse_url) {
+      uploads.death_certificate_spouse_url = await uploadFile(
+        formData.deathCertificate,
+        "death-certificates",
+        "death-spouse"
+      );
+    }
   } else if (formData.roleType === "orphan") {
-    uploads.birth_certificate_url = await uploadFile(
-      formData.birthCertificate,
-      "birth-certificates",
-      "birth-cert"
-    );
-    uploads.death_certificate_parents_url = await uploadFile(
-      formData.deathCertificate,
-      "death-certificates",
-      "death-parents"
-    );
-    uploads.supporting_document_url = await uploadFile(
-      formData.supportingDocument,
-      "supporting-docs",
-      "supporting"
-    );
+    if (uploads.birth_certificate_url) {
+      uploads.birth_certificate_url = await uploadFile(
+        formData.birthCertificate,
+        "birth-certificates",
+        "birth-cert"
+      );
+    }
+    if (uploads.death_certificate_parents_url) {
+      uploads.death_certificate_parents_url = await uploadFile(
+        formData.deathCertificate,
+        "death-certificates",
+        "death-parents"
+      );
+    }
+    if (uploads.supporting_document_url) {
+      uploads.supporting_document_url = await uploadFile(
+        formData.supportingDocument,
+        "supporting-docs",
+        "supporting"
+      );
+    }
   }
 
   // --- Optional profile picture ---
@@ -89,6 +104,7 @@ export async function completeNeedyProfile(
     role_type: formData.roleType,
     area_of_operations: formData.areaOfOperations,
     guardian_info: formData.guardianInfo || null,
+    childrens: formData.children || null,
     ...uploads,
   });
 

@@ -22,6 +22,7 @@ import { citiesOfPakistan } from "@/lib/constant";
 import { FormValues } from "@/lib/type";
 import { useAuthStore } from "@/store/useAuthStore";
 import { addCase } from "@/supabase/cases/addCase";
+import { supabase } from "@/supabase/client";
 import { FileText, MapPin, Upload, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -90,6 +91,42 @@ const AddCase = () => {
       });
     }
   };
+  useEffect(() => {
+    const checkNeedyDoc = async () => {
+      const { data: needy_profile } = await supabase
+        .from("needy_profiles")
+        .select("*")
+        .eq("profile_id", user.id)
+        .single();
+
+      if (needy_profile.role_type === "widow") {
+        if (
+          needy_profile.cnic_self_url === null &&
+          needy_profile.cnic_spouse_url === null &&
+          needy_profile.death_certificate_spouse_url === null
+        ) {
+          toast({
+            variant: "destructive",
+            title: "Please Upload Required Documents To Proceed Creating Case",
+          });
+          navigate("/edit-profile");
+        }
+      } else {
+        if (
+          needy_profile.birth_certificate_url === null &&
+          needy_profile.death_certificate_parents_url === null &&
+          needy_profile.supporting_document_url === null
+        ) {
+          toast({
+            variant: "destructive",
+            title: "Please Upload Required Documents To Proceed Creating Case",
+          });
+          navigate("/edit-profile");
+        }
+      }
+    };
+    checkNeedyDoc();
+  }, []);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">

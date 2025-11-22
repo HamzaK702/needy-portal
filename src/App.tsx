@@ -8,6 +8,7 @@ import CaseManagement from "./pages/CaseManagement";
 import EditCase from "./pages/EditCase";
 import Index from "./pages/Index";
 // Removed unused routes: NeedyManagement, DonorRelations, Reports, Financial
+import EditProfile from "./pages/auth/editProfile";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -26,6 +27,7 @@ const App = () => {
       <Route path="/" element={<ProtectedRoute />}>
         <Route index element={<Index />} />
         <Route path="case-management" element={<CaseManagement />} />
+        <Route path="edit-profile" element={<EditProfile />} />
         <Route path="add-case" element={<AddCase />} />
         <Route path="edit-case/:id" element={<EditCase />} />
       </Route>
