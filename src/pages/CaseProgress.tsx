@@ -42,10 +42,17 @@ interface CaseUpdate {
   case_id: string;
   title: string;
   description: string;
+  amount: number;
   image_url: string | null;
   doc_url: string | null;
   created_at: string;
 }
+type ProgressFormValues = {
+  title: string;
+  description: string;
+  amount: number;
+  document: File | null;
+};
 
 const CaseProgress = () => {
   const { caseId } = useParams();
@@ -60,19 +67,21 @@ const CaseProgress = () => {
     reset,
     control,
     formState: { errors },
-  } = useForm({
+  } = useForm<ProgressFormValues>({
     defaultValues: {
       title: "",
       description: "",
       document: null as File | null,
+      amount: 0,
     },
   });
 
-  const editForm = useForm({
+  const editForm = useForm<ProgressFormValues>({
     defaultValues: {
       title: "",
       description: "",
       document: null as File | null,
+      amount: 0,
     },
   });
 
@@ -122,6 +131,7 @@ const CaseProgress = () => {
     editForm.reset({
       title: update.title,
       description: update.description,
+      amount: update.amount,
       document: null,
     });
   };
@@ -191,6 +201,20 @@ const CaseProgress = () => {
               />
               {errors.title && (
                 <p className="text-sm text-red-500">{errors.title.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Amount Used *</Label>
+              <Input
+                type="number"
+                {...register("amount", {
+                  required: "Amount is required",
+                  min: { value: 1, message: "Amount must be greater than 0" },
+                })}
+              />
+              {errors.amount && (
+                <p className="text-sm text-red-500">{errors.amount.message}</p>
               )}
             </div>
 
@@ -271,6 +295,10 @@ const CaseProgress = () => {
                   </span>
                 </div>
 
+                <p className="text-sm font-semibold text-green-600">
+                  Amount Used: Rs {u.amount}
+                </p>
+
                 <p className="text-sm text-muted-foreground break-words">
                   {u.description}
                 </p>
@@ -339,6 +367,17 @@ const CaseProgress = () => {
               <Textarea
                 {...editForm.register("description", {
                   required: "Description is required",
+                })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Amount Used *</Label>
+              <Input
+                type="number"
+                {...editForm.register("amount", {
+                  required: "Amount is required",
+                  min: { value: 1, message: "Amount must be greater than 0" },
                 })}
               />
             </div>
