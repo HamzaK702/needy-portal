@@ -44,6 +44,12 @@ export async function addProgress(formData: AddProgressData) {
       publicId = uploadRes.public_id;
     }
 
+    // get case name by id
+    const { data: caseTitle, error: caseTitleError } = await supabase
+      .from("cases")
+      .select("title")
+      .eq("id", formData.case_id);
+
     // Insert update into Supabase
     const { error: caseError } = await supabase.from("case_updates").insert({
       case_id: formData.case_id,
@@ -57,8 +63,7 @@ export async function addProgress(formData: AddProgressData) {
     const { data: donations, error: donationError } = await supabase
       .from("case_donations")
       .select("*")
-      .eq("case_id", "5c3e0675-fd2a-4869-a7c6-729479238481");
-    console.log("🚀 ~ addProgress ~ donations:", donations);
+      .eq("case_id", formData.case_id);
 
     if (donationError) throw donationError;
 
@@ -72,7 +77,6 @@ export async function addProgress(formData: AddProgressData) {
       .from("profiles")
       .select("email")
       .in("id", uniqueDonorIds);
-    console.log("🚀 ~ addProgress ~ profiles:", profiles);
 
     if (profileError) throw profileError;
 
@@ -88,7 +92,8 @@ export async function addProgress(formData: AddProgressData) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          caseTitle: formData.title,
+          caseTitle:
+            caseTitle?.[0]?.title || "For The Case You Donated Earlier",
           amount: formData.amount,
           emails,
         }),
