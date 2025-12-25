@@ -22,13 +22,17 @@ import { useNavigate } from "react-router-dom";
 type Child = {
   bformNo: string;
 };
-
 type ProfileValues = {
   areaOfOperations: string;
   guardianInfo?: string;
   children: Child[];
-  cnicFile?: FileList;
-  spouseCnicFile?: FileList;
+
+  cnicFront?: FileList;
+  cnicBack?: FileList;
+
+  spouseCnicFront?: FileList;
+  spouseCnicBack?: FileList;
+
   deathCertificate?: FileList;
   birthCertificate?: FileList;
   supportingDocument?: FileList;
@@ -105,9 +109,9 @@ export default function EditProfile() {
       const result = await editProfile(values, profile, role);
       if (result.success) {
         toast({
-          title: "Account created! Please verify your email to continue.",
+          title: "Profile Updtaed",
         });
-        navigate("/sign-in");
+        navigate("/");
       }
     } catch (error: any) {
       toast({
@@ -136,52 +140,112 @@ export default function EditProfile() {
             {role === "widow" && (
               <div className="space-y-4 border p-5 rounded-lg bg-secondary/5">
                 {/* CNIC Self */}
-                <div className="space-y-2">
-                  <Label>CNIC (Your Own)</Label>
-                  {profile?.cnic_self_url ? (
-                    <p className="text-xs text-green-600">
-                      Already uploaded ✓{" "}
-                      <a
-                        href={profile.cnic_self_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline text-blue-600"
-                      >
-                        View
-                      </a>
-                    </p>
-                  ) : (
-                    <p className="text-xs text-red-600">Not uploaded yet</p>
-                  )}
+                <div className="space-y-3">
+                  <div className="text-xs mt-1">
+                    {/* Front CNIC */}
+                    {profile?.cnic_self_front_url ? (
+                      <p className="text-green-600">
+                        Front uploaded ✓{" "}
+                        <a
+                          href={profile.cnic_self_front_url}
+                          target="_blank"
+                          className="underline text-blue-600"
+                        >
+                          View
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="text-red-600">Front not uploaded yet</p>
+                    )}
+
+                    {/* Back CNIC */}
+                    {profile?.cnic_self_back_url ? (
+                      <p className="text-green-600">
+                        Back uploaded ✓{" "}
+                        <a
+                          href={profile.cnic_self_back_url}
+                          target="_blank"
+                          className="underline text-blue-600"
+                        >
+                          View
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="text-red-600">Back not uploaded yet</p>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    CNIC (Your Own) Front
+                  </p>
+
                   <Input
                     type="file"
                     accept="image/*,.pdf"
-                    {...register("cnicFile")}
+                    {...register("cnicFront")}
+                  />
+
+                  <p className="text-xs text-muted-foreground">
+                    CNIC (Your Own) Back
+                  </p>
+
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    {...register("cnicBack")}
                   />
                 </div>
 
                 {/* CNIC Spouse */}
-                <div className="space-y-2">
-                  <Label>CNIC (Spouse)</Label>
-                  {profile?.cnic_spouse_url ? (
-                    <p className="text-xs text-green-600">
-                      Already uploaded ✓{" "}
-                      <a
-                        href={profile.cnic_spouse_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline text-blue-600"
-                      >
-                        View
-                      </a>
-                    </p>
-                  ) : (
-                    <p className="text-xs text-red-600">Not uploaded yet</p>
-                  )}
+                <div className="space-y-3">
+                  <div className="text-xs mt-1">
+                    {/* Front CNIC */}
+                    {profile?.cnic_spouse_front_url ? (
+                      <p className="text-green-600">
+                        Front uploaded ✓{" "}
+                        <a
+                          href={profile.cnic_spouse_front_url}
+                          target="_blank"
+                          className="underline text-blue-600"
+                        >
+                          View
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="text-red-600">Front not uploaded yet</p>
+                    )}
+
+                    {/* Back CNIC */}
+                    {profile?.cnic_spouse_back_url ? (
+                      <p className="text-green-600">
+                        Back uploaded ✓{" "}
+                        <a
+                          href={profile.cnic_spouse_back_url}
+                          target="_blank"
+                          className="underline text-blue-600"
+                        >
+                          View
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="text-red-600">Back not uploaded yet</p>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">CNIC Front</p>
+
                   <Input
                     type="file"
                     accept="image/*,.pdf"
-                    {...register("spouseCnicFile")}
+                    {...register("spouseCnicFront")}
+                  />
+
+                  <p className="text-xs text-muted-foreground">CNIC Back</p>
+
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    {...register("spouseCnicBack")}
                   />
                 </div>
 

@@ -4,7 +4,7 @@ import { EditCaseFormValues } from "@/lib/type";
 import { supabase } from "../client";
 
 /**
- * Update an existing case in Supabase with document handling
+ * Update an existing case in Supabase with document + case image handling
  */
 export async function updateCase(formData: EditCaseFormValues, caseId: string) {
   // 1. Get session
@@ -14,15 +14,47 @@ export async function updateCase(formData: EditCaseFormValues, caseId: string) {
     throw new Error("No active session found");
   }
 
-  const newUploads: { url: string; name: string; publicId: string }[] = [];
+  // Rollback safety
+  const newUploads: { publicId: string }[] = [];
 
-  // Collect publicIds to delete after successful update
+  // Delete AFTER success
   const publicIdsToDelete: string[] = [];
 
   try {
-    // 2. Handle removed docs (collect publicIds for later deletion)
+    /* ─────────────────────────────
+       CASE IMAGE (ADDED)
+    ───────────────────────────── */
+
+    let finalCaseImageUrl = formData.case_image ?? null;
+
+    if (formData.caseImage) {
+      const uploadRes = await uploadViaEdge(
+        session.access_token,
+        formData.caseImage,
+        `case-image-${Date.now()}`,
+        `needy-portal/cases/${caseId}`
+      );
+
+      finalCaseImageUrl = uploadRes.url;
+
+      // rollback safety
+      newUploads.push({ publicId: uploadRes.public_id });
+
+      // mark old image for deletion
+      if (formData.case_image) {
+        const oldPublicId = extractPublicIdFromUrl(formData.case_image);
+        if (oldPublicId) {
+          publicIdsToDelete.push(oldPublicId);
+        }
+      }
+    }
+
+    /* ─────────────────────────────
+       REMOVED DOCS
+    ───────────────────────────── */
+
     formData.removedDocs?.forEach((doc) => {
-      if (doc.isOldOne) {
+      if (doc.isOldOne && doc.url) {
         const publicId = extractPublicIdFromUrl(doc.url);
         if (publicId) {
           publicIdsToDelete.push(publicId);
@@ -30,11 +62,14 @@ export async function updateCase(formData: EditCaseFormValues, caseId: string) {
       }
     });
 
-    // 3. Upload new/updated files
+    /* ─────────────────────────────
+       DOC UPLOADS
+    ───────────────────────────── */
+
     for (const doc of formData.docs) {
       if (doc.file) {
-        // Has a new file attached (either new doc or update)
         const baseName = doc.name.replace(/\.[^/.]+$/, "");
+
         const uploadRes = await uploadViaEdge(
           session.access_token,
           doc.file,
@@ -42,25 +77,28 @@ export async function updateCase(formData: EditCaseFormValues, caseId: string) {
           `needy-portal/cases/${caseId}`
         );
 
-        // Track new upload for rollback
-        newUploads.push({
-          name: doc.name,
-          url: uploadRes.url,
-          publicId: uploadRes.public_id,
-        });
+        newUploads.push({ publicId: uploadRes.public_id });
 
-        // Update doc with new details
         doc.url = uploadRes.url;
       }
     }
 
-    // 4. Prepare docs array to store (only { name, url })
-    const finalDocs = formData.docs
-      .filter((d) => d.url) // only keep docs that have URLs
-      .map((d) => ({ name: d.name, url: d.url! }));
+    /* ─────────────────────────────
+       FINAL DOC PAYLOAD
+    ───────────────────────────── */
 
-    // 5. Update case in Supabase
-    const { error: caseError } = await supabase
+    const finalDocs = formData.docs
+      .filter((d) => d.url)
+      .map((d) => ({
+        name: d.name,
+        url: d.url!,
+      }));
+
+    /* ─────────────────────────────
+       DB UPDATE
+    ───────────────────────────── */
+
+    const { error } = await supabase
       .from("cases")
       .update({
         name: formData.name,
@@ -78,28 +116,37 @@ export async function updateCase(formData: EditCaseFormValues, caseId: string) {
         recurring_duration: formData.recurring_duration,
         location: formData.location,
         status: formData.status,
+
+        case_image: finalCaseImageUrl, // ✅ ADDED
+
         docs: finalDocs,
         updated_at: new Date().toISOString(),
       })
       .eq("id", caseId);
 
-    if (caseError) throw caseError;
+    if (error) throw error;
 
-    // 6. After successful update, delete old/removed files from Cloudinary
+    /* ─────────────────────────────
+       DELETE OLD FILES (POST SUCCESS)
+    ───────────────────────────── */
+
     for (const publicId of publicIdsToDelete) {
       try {
         await deleteViaEdge(session.access_token, publicId);
       } catch (e) {
-        console.warn("Failed to delete file:", publicId, e);
+        console.warn("Failed to delete Cloudinary file:", publicId, e);
       }
     }
 
     return { success: true, caseId };
   } catch (error) {
-    // Rollback: delete newly uploaded docs if update fails
+    /* ─────────────────────────────
+       ROLLBACK NEW UPLOADS
+    ───────────────────────────── */
+
     try {
-      for (const doc of newUploads) {
-        await deleteViaEdge(session.access_token, doc.publicId);
+      for (const file of newUploads) {
+        await deleteViaEdge(session.access_token, file.publicId);
       }
     } catch (rollbackError) {
       console.error("Rollback failed:", rollbackError);

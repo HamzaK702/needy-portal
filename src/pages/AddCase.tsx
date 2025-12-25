@@ -33,6 +33,8 @@ const AddCase = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
+
   // react hook form setup
   const {
     register,
@@ -57,8 +59,9 @@ const AddCase = () => {
       familyMembers: 0,
       isRecurring: false,
       recurringDuration: undefined,
+      caseImage: null,
       location: "",
-      docs: [{ docName: "", file: null }], // ✅ one pre-added row
+      docs: [], // ✅ one pre-added row
     },
   });
 
@@ -101,8 +104,10 @@ const AddCase = () => {
 
       if (needy_profile.role_type === "widow") {
         if (
-          needy_profile.cnic_self_url === null &&
-          needy_profile.cnic_spouse_url === null &&
+          needy_profile.cnic_self_front_url === null ||
+          needy_profile.cnic_self_back_url === null ||
+          needy_profile.cnic_spouse_front_url === null ||
+          needy_profile.cnic_spouse_back_url === null ||
           needy_profile.death_certificate_spouse_url === null
         ) {
           toast({
@@ -373,6 +378,52 @@ const AddCase = () => {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Case Picture
+            </CardTitle>
+            <CardDescription>
+              Upload a main picture for this case (jpg, png only)
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-3">
+            <Input
+              type="file"
+              accept="image/png,image/jpeg"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+
+                setValue("caseImage", file, { shouldValidate: true });
+
+                if (file) {
+                  setPreview(URL.createObjectURL(file));
+                } else {
+                  setPreview(null);
+                }
+              }}
+            />
+
+            {preview && (
+              <div className="w-full h-48 border rounded-lg overflow-hidden bg-muted">
+                <img
+                  src={preview}
+                  alt="Case Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
+            {errors.caseImage && (
+              <p className="text-red-500 text-sm ml-1">
+                {errors.caseImage.message}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Document Upload */}
         <Card>
           <CardHeader>
@@ -391,13 +442,13 @@ const AddCase = () => {
                 setValue={setValue}
                 errors={errors}
                 remove={() => remove(index)}
-                disabledRemove={fields.length === 1}
               />
             ))}
             {fields.length < 5 && (
               <Button
                 type="button"
                 variant="outline"
+                className="block"
                 onClick={() => append({ docName: "", file: null })}
               >
                 + Add Document
@@ -465,14 +516,12 @@ const DocumentField = ({
   setValue,
   errors,
   remove,
-  disabledRemove,
 }: {
   index: number;
   register: any;
   setValue: any;
   errors: any;
   remove: () => void;
-  disabledRemove: boolean;
 }) => {
   useEffect(() => {
     register(`docs.${index}.file`, { required: "File is required" });
@@ -511,13 +560,7 @@ const DocumentField = ({
       </div>
 
       <div>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          onClick={remove}
-          disabled={disabledRemove}
-        >
+        <Button type="button" variant="destructive" size="sm" onClick={remove}>
           Remove
         </Button>
       </div>

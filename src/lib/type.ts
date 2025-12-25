@@ -5,6 +5,7 @@ export type FormValues = {
   address: string;
   title: string;
   shortStory: string;
+  caseImage: File | null;
   fullStory: string;
   category: string;
   urgencyLevel: string;
@@ -39,6 +40,9 @@ export type EditCaseFormValues = {
   location: string;
   docs: EditCaseFormDoc[];
   removedDocs: EditCaseFormDoc[];
+
+  case_image?: string | null; // existing URL
+  caseImage?: File | null; // new upload
   status: string;
 };
 

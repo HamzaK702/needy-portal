@@ -25,12 +25,20 @@ type Child = {
 
 type WelcomeValues = {
   roleType: "widow" | "orphan";
-  cnicFile?: FileList;
-  spouseCnicFile?: FileList;
+
+  // Widow – self CNIC
+  cnicFront?: FileList;
+  cnicBack?: FileList;
+
+  // Widow – spouse CNIC
+  spouseCnicFront?: FileList;
+  spouseCnicBack?: FileList;
+
   deathCertificate?: FileList;
   birthCertificate?: FileList;
   guardianInfo?: string;
   supportingDocument?: FileList;
+
   areaOfOperations: string;
   profilePic?: FileList;
   children: Child[];
@@ -133,33 +141,40 @@ export default function WelcomeForm() {
                 <h3 className="font-medium text-sm mb-2">
                   Documentation Requirements (Widow)
                 </h3>
-
                 <div>
-                  <Label>CNIC (Your Own)</Label>
+                  <Label>CNIC (Your Own) – Front</Label>
                   <Input
                     type="file"
                     accept="image/*"
-                    {...register("cnicFile")}
+                    {...register("cnicFront")}
                   />
-                  {errors.cnicFile && (
-                    <p className="text-red-500 text-xs">
-                      {errors.cnicFile.message}
-                    </p>
-                  )}
                 </div>
 
                 <div>
-                  <Label>CNIC (Deceased Spouse)</Label>
+                  <Label>CNIC (Your Own) – Back</Label>
                   <Input
                     type="file"
                     accept="image/*"
-                    {...register("spouseCnicFile")}
+                    {...register("cnicBack")}
                   />
-                  {errors.spouseCnicFile && (
-                    <p className="text-red-500 text-xs">
-                      {errors.spouseCnicFile.message}
-                    </p>
-                  )}
+                </div>
+
+                <div>
+                  <Label>CNIC (Deceased Spouse) – Front</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    {...register("spouseCnicFront")}
+                  />
+                </div>
+
+                <div>
+                  <Label>CNIC (Deceased Spouse) – Back</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    {...register("spouseCnicBack")}
+                  />
                 </div>
 
                 <div>

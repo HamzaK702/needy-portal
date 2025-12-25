@@ -4,14 +4,23 @@ import { supabase } from "../client";
 
 type WelcomeValues = {
   roleType: "widow" | "orphan";
-  cnicFile?: FileList;
-  spouseCnicFile?: FileList;
+
+  // Self CNIC
+  cnicFront?: FileList;
+  cnicBack?: FileList;
+
+  // Spouse CNIC (widow)
+  spouseCnicFront?: FileList;
+  spouseCnicBack?: FileList;
+
   deathCertificate?: FileList;
   birthCertificate?: FileList;
   guardianInfo?: string;
   supportingDocument?: FileList;
+
   areaOfOperations: string;
   profilePic?: FileList;
+
   children?: {
     bformNo: string;
   }[];
@@ -31,74 +40,86 @@ export async function completeNeedyProfile(
     label: string
   ) => {
     if (!fileList || fileList.length === 0) return null;
+
     const file = fileList[0];
     const publicId = `${userId}/${label}-${Date.now()}`;
+
     const result = await uploadViaEdge(
       session.access_token,
       file,
       publicId,
       `needy-portal/${folder}`
     );
+
     return result.url;
   };
 
-  // --- Uploads based on role type ---
+  // ---------------- Uploads ----------------
   const uploads: Record<string, string | null> = {};
 
   if (formData.roleType === "widow") {
-    if (uploads.cnic_self_url) {
-      uploads.cnic_self_url = await uploadFile(
-        formData.cnicFile,
-        "cnic-self",
-        "cnic-self"
-      );
-    }
-    if (uploads.cnic_spouse_url) {
-      uploads.cnic_spouse_url = await uploadFile(
-        formData.spouseCnicFile,
-        "cnic-spouse",
-        "cnic-spouse"
-      );
-    }
-    if (uploads.death_certificate_spouse_url) {
-      uploads.death_certificate_spouse_url = await uploadFile(
-        formData.deathCertificate,
-        "death-certificates",
-        "death-spouse"
-      );
-    }
-  } else if (formData.roleType === "orphan") {
-    if (uploads.birth_certificate_url) {
-      uploads.birth_certificate_url = await uploadFile(
-        formData.birthCertificate,
-        "birth-certificates",
-        "birth-cert"
-      );
-    }
-    if (uploads.death_certificate_parents_url) {
-      uploads.death_certificate_parents_url = await uploadFile(
-        formData.deathCertificate,
-        "death-certificates",
-        "death-parents"
-      );
-    }
-    if (uploads.supporting_document_url) {
-      uploads.supporting_document_url = await uploadFile(
-        formData.supportingDocument,
-        "supporting-docs",
-        "supporting"
-      );
-    }
+    // Self CNIC
+    uploads.cnic_self_front_url = await uploadFile(
+      formData.cnicFront,
+      "cnic-self",
+      "cnic-self-front"
+    );
+
+    uploads.cnic_self_back_url = await uploadFile(
+      formData.cnicBack,
+      "cnic-self",
+      "cnic-self-back"
+    );
+
+    // Spouse CNIC
+    uploads.cnic_spouse_front_url = await uploadFile(
+      formData.spouseCnicFront,
+      "cnic-spouse",
+      "cnic-spouse-front"
+    );
+
+    uploads.cnic_spouse_back_url = await uploadFile(
+      formData.spouseCnicBack,
+      "cnic-spouse",
+      "cnic-spouse-back"
+    );
+
+    // Death certificate (spouse)
+    uploads.death_certificate_spouse_url = await uploadFile(
+      formData.deathCertificate,
+      "death-certificates",
+      "death-spouse"
+    );
   }
 
-  // --- Optional profile picture ---
+  if (formData.roleType === "orphan") {
+    uploads.birth_certificate_url = await uploadFile(
+      formData.birthCertificate,
+      "birth-certificates",
+      "birth-cert"
+    );
+
+    uploads.death_certificate_parents_url = await uploadFile(
+      formData.deathCertificate,
+      "death-certificates",
+      "death-parents"
+    );
+
+    uploads.supporting_document_url = await uploadFile(
+      formData.supportingDocument,
+      "supporting-docs",
+      "supporting"
+    );
+  }
+
+  // Profile picture (optional)
   uploads.profile_pic_url = await uploadFile(
     formData.profilePic,
     "profile-pics",
     "profile"
   );
 
-  // --- Insert into needy_profiles ---
+  // ---------------- Insert ----------------
   const { error: needyError } = await supabase.from("needy_profiles").insert({
     profile_id: userId,
     role_type: formData.roleType,
@@ -110,7 +131,7 @@ export async function completeNeedyProfile(
 
   if (needyError) throw needyError;
 
-  // --- Mark profile as completed ---
+  // ---------------- Mark completed ----------------
   const { error: profileError } = await supabase
     .from("profiles")
     .update({ isprofilecompleted: true })
