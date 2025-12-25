@@ -4,12 +4,18 @@ import { supabase } from "../client";
 
 interface ProfileValues {
   areaOfOperations: string;
-  children: any[]; // proper type se replace kar dena agar hai
+  children: any[]; // replace `any` with proper type if you have one
   guardianInfo?: string;
 
-  // Files (FileList from input)
-  cnicFile?: FileList;
-  spouseCnicFile?: FileList;
+  // Widow – self CNIC
+  cnicFront?: FileList;
+  cnicBack?: FileList;
+
+  // Widow – spouse CNIC
+  spouseCnicFront?: FileList;
+  spouseCnicBack?: FileList;
+
+  // Common documents
   deathCertificate?: FileList;
   birthCertificate?: FileList;
   supportingDocument?: FileList;
@@ -54,14 +60,24 @@ export async function editProfile(
       ...(role === "widow"
         ? [
             {
-              field: values.cnicFile,
-              column: "cnic_self_url",
-              baseName: "cnic_self",
+              field: values.cnicFront,
+              column: "cnic_self_front_url",
+              baseName: "cnic_self_front",
             },
             {
-              field: values.spouseCnicFile,
-              column: "cnic_spouse_url",
-              baseName: "cnic_spouse",
+              field: values.cnicBack,
+              column: "cnic_self_back_url",
+              baseName: "cnic_self_back",
+            },
+            {
+              field: values.spouseCnicFront,
+              column: "cnic_spouse_front_url",
+              baseName: "cnic_spouse_front",
+            },
+            {
+              field: values.spouseCnicBack,
+              column: "cnic_spouse_back_url",
+              baseName: "cnic_spouse_back",
             },
           ]
         : []),
@@ -102,7 +118,6 @@ export async function editProfile(
       (item): item is { field: FileList; column: string; baseName: string } =>
         !!item.field && item.field.length > 0
     );
-    console.log("🚀 ~ editProfile ~ changedFields:", changedFields);
 
     const publicIdsToDelete: string[] = [];
 
@@ -152,7 +167,6 @@ export async function editProfile(
         )
       );
     }
-    console.log(publicIdsToDelete, "files to upload", filesToUpload);
 
     return { success: true };
   } catch (err: any) {

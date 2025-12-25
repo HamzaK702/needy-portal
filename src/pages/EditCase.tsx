@@ -34,6 +34,7 @@ const EditCase = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
 
   const {
     register,
@@ -113,6 +114,7 @@ const EditCase = () => {
           ];
         }
         reset(data);
+        setPreview(data.case_image || null);
       } catch (err) {
         toast({
           variant: "destructive",
@@ -400,6 +402,43 @@ const EditCase = () => {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Case Picture
+            </CardTitle>
+            <CardDescription>
+              Replace the main picture for this case (optional)
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-3">
+            <Input
+              type="file"
+              accept="image/png,image/jpeg"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setValue("caseImage", file);
+
+                if (file) {
+                  setPreview(URL.createObjectURL(file));
+                }
+              }}
+            />
+
+            {preview && (
+              <div className="w-full h-48 border rounded-lg overflow-hidden bg-muted">
+                <img
+                  src={preview}
+                  alt="Case Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Document Upload */}
         <Card>
           <CardHeader>
@@ -417,7 +456,6 @@ const EditCase = () => {
                 setValue={setValue}
                 errors={errors}
                 remove={() => preRemoveFilter(field, index)}
-                disabledRemove={fields.length === 1}
                 doc={watch(`docs.${index}` as any)}
               />
             ))}
@@ -493,7 +531,6 @@ const DocumentField = ({
   setValue,
   errors,
   remove,
-  disabledRemove,
   doc,
 }: {
   index: number;
@@ -501,7 +538,6 @@ const DocumentField = ({
   setValue: any;
   errors: any;
   remove: () => void;
-  disabledRemove: boolean;
   doc: any;
 }) => {
   useEffect(() => {
@@ -542,7 +578,6 @@ const DocumentField = ({
               variant="destructive"
               size="sm"
               onClick={remove}
-              disabled={disabledRemove}
             >
               Remove
             </Button>
@@ -554,7 +589,6 @@ const DocumentField = ({
               variant="destructive"
               size="sm"
               onClick={remove}
-              disabled={disabledRemove}
             >
               Remove
             </Button>

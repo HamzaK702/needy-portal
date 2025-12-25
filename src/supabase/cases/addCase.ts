@@ -7,7 +7,7 @@ type CaseDoc = {
 };
 
 type AddCaseFormData = {
-  userId: string; // caretaker or needy user id
+  userId: string;
   name: string;
   cnic: string;
   phone: string;
@@ -23,31 +23,41 @@ type AddCaseFormData = {
   isRecurring: boolean;
   recurringDuration?: number;
   location: string;
+
+  caseImage?: File | null; // ✅ ADD THIS
   docs: CaseDoc[];
 };
 
-/**
- * Insert a new case into Supabase with transactional safety
- */
 export async function addCase(formData: AddCaseFormData) {
-  // 1. Get session
   const { data } = await supabase.auth.getSession();
   const session = data?.session;
-  if (!session) {
-    throw new Error("No active session found");
-  }
+  if (!session) throw new Error("No active session found");
 
-  // 2. Generate a unique case ID (e.g., UUID)
   const caseId = crypto.randomUUID();
 
-  // 3. Upload all documents to Cloudinary and track publicIds for cleanup
   const uploadedDocs: { name: string; url: string; publicId: string }[] = [];
-  const publicIdsToCleanup: string[] = [];
+  let caseImageUpload: { url: string; publicId: string } | null = null;
 
   try {
+    // 1️⃣ Upload CASE IMAGE (same style, before DB insert)
+    if (formData.caseImage) {
+      const uploadRes = await uploadViaEdge(
+        session.access_token,
+        formData.caseImage,
+        "case-image",
+        `needy-portal/cases/${caseId}`
+      );
+
+      caseImageUpload = {
+        url: uploadRes.url,
+        publicId: uploadRes.public_id,
+      };
+    }
+
+    // 2️⃣ Upload DOCUMENTS
     for (const doc of formData.docs) {
       if (doc.file) {
-        const baseName = doc.docName.replace(/\.[^/.]+$/, ""); // file ka naam without
+        const baseName = doc.docName.replace(/\.[^/.]+$/, "");
 
         const uploadRes = await uploadViaEdge(
           session.access_token,
@@ -56,8 +66,6 @@ export async function addCase(formData: AddCaseFormData) {
           `needy-portal/cases/${caseId}`
         );
 
-        // 👇 store the exact Cloudinary public_id, not the one you built
-        publicIdsToCleanup.push(uploadRes?.public_id);
         uploadedDocs.push({
           name: doc.docName,
           url: uploadRes.url,
@@ -66,8 +74,8 @@ export async function addCase(formData: AddCaseFormData) {
       }
     }
 
-    // 4. Insert case into Supabase
-    const { error: caseError } = await supabase.from("cases").insert({
+    // 3️⃣ Insert CASE in Supabase
+    const { error } = await supabase.from("cases").insert({
       id: caseId,
       user_id: formData.userId,
       name: formData.name,
@@ -86,27 +94,27 @@ export async function addCase(formData: AddCaseFormData) {
       is_recurring: formData.isRecurring,
       recurring_duration: formData.recurringDuration,
       location: formData.location,
-      docs: uploadedDocs.map((doc) => ({ name: doc.name, url: doc.url })), // Store only name and url
+
+      case_image: caseImageUpload?.url ?? null, // ✅ SAME PATTERN
+      docs: uploadedDocs.map((d) => ({ name: d.name, url: d.url })),
+
       created_at: new Date().toISOString(),
     });
 
-    if (caseError) throw caseError;
+    if (error) throw error;
 
-    // If successful, clear the cleanup list as no rollback is needed
-    publicIdsToCleanup.length = 0;
     return { success: true, caseId };
   } catch (error) {
-    // Cleanup: Delete uploaded files from Cloudinary if insertion failed
-
+    // 🔥 FULL CLEANUP (same as docs)
     try {
       await deleteFolderViaEdge(
         session.access_token,
         `needy-portal/cases/${caseId}`
       );
     } catch (cleanupError) {
-      console.error("Failed to clean up Cloudinary file:", cleanupError);
+      console.error("Cloudinary cleanup failed", cleanupError);
     }
 
-    throw error; // Re-throw the original error after cleanup
+    throw error;
   }
 }
