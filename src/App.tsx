@@ -8,6 +8,7 @@ import CaseManagement from "./pages/CaseManagement";
 import EditCase from "./pages/EditCase";
 import Index from "./pages/Index";
 // Removed unused routes: NeedyManagement, DonorRelations, Reports, Financial
+import ChangePassword from "./pages/auth/changePassword";
 import EditProfile from "./pages/auth/editProfile";
 import CaseProgress from "./pages/CaseProgress";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,8 @@ const App = () => {
         <Route path="edit-case/:id" element={<EditCase />} />
         <Route path="case-progress/:caseId" element={<CaseProgress />} />
       </Route>
+      
+      <Route path="change-password" element={<ChangePassword />} />
 
       {/* UnProtected Routes */}
       <Route element={!user ? <Outlet /> : <Navigate to={"/"} />}>
