@@ -8,6 +8,21 @@ export function useSupabaseAuth() {
   useEffect(() => {
     const fetchUser = async () => {
       setLoading(true);
+      
+      // Check if we're on reset-password route with recovery session
+      const isResetPasswordRoute = window.location.pathname === "/reset-password";
+      const recoverySessionFlag = sessionStorage.getItem("recovery_session_validated");
+      const hash = window.location.hash;
+      const hasRecoveryToken = hash.includes("type=recovery") || hash.includes("access_token");
+      
+      // If on reset-password route and has recovery token, don't set user yet
+      // Let the ResetPassword component handle it
+      if (isResetPasswordRoute && (hasRecoveryToken || recoverySessionFlag)) {
+        console.log("useSupabaseAuth - Recovery session detected, skipping user set");
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase.auth.getSession();
       if (error) {
         console.error("Error fetching session:", error);
@@ -22,7 +37,19 @@ export function useSupabaseAuth() {
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        // Check if this is a recovery session
+        const isResetPasswordRoute = window.location.pathname === "/reset-password";
+        const recoverySessionFlag = sessionStorage.getItem("recovery_session_validated");
+        const hash = window.location.hash;
+        const hasRecoveryToken = hash.includes("type=recovery") || hash.includes("access_token");
+        
+        // Don't set user if we're on reset-password route with recovery session
+        if (isResetPasswordRoute && (hasRecoveryToken || recoverySessionFlag || event === "PASSWORD_RECOVERY")) {
+          console.log("useSupabaseAuth - Ignoring recovery session in onAuthStateChange");
+          return;
+        }
+        
         setUser(session?.user || null);
       }
     );

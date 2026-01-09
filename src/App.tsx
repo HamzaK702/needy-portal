@@ -3,11 +3,12 @@ import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import Loading from "./components/ui/loading";
 import { useSupabaseAuth } from "./hooks/useSupabaseAuth";
 import AddCase from "./pages/AddCase";
-import { ProtectedRoute, SignIn, SignUp } from "./pages/auth";
+import { ForgotPassword, ProtectedRoute, ResetPassword, SignIn, SignUp } from "./pages/auth";
 import CaseManagement from "./pages/CaseManagement";
 import EditCase from "./pages/EditCase";
 import Index from "./pages/Index";
 // Removed unused routes: NeedyManagement, DonorRelations, Reports, Financial
+import ChangePassword from "./pages/auth/changePassword";
 import EditProfile from "./pages/auth/editProfile";
 import CaseProgress from "./pages/CaseProgress";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,9 @@ const App = () => {
 
   return (
     <Routes>
+      {/* Reset Password Route - MUST be first to catch recovery sessions before other routes */}
+      <Route path="/reset-password" element={<ResetPassword />} />
+      
       {/* Protected Routes */}
       <Route path="/" element={<ProtectedRoute />}>
         <Route index element={<Index />} />
@@ -33,11 +37,14 @@ const App = () => {
         <Route path="edit-case/:id" element={<EditCase />} />
         <Route path="case-progress/:caseId" element={<CaseProgress />} />
       </Route>
+      
+      <Route path="change-password" element={<ChangePassword />} />
 
       {/* UnProtected Routes */}
       <Route element={!user ? <Outlet /> : <Navigate to={"/"} />}>
         <Route path="/sign-up" element={<SignUp />} />
         <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

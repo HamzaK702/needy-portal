@@ -160,6 +160,14 @@ export default function SigninForm() {
                 </p>
               )}
             </div>
+            <p className="flex justify-end text-center text-sm text-muted-foreground">
+            <Link
+              to="/forgot-password"
+              className="text-primary hover:underline font-medium"
+            >
+              Forgot password?
+            </Link>
+          </p>
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Signing in..." : "Sign in"}
@@ -168,8 +176,9 @@ export default function SigninForm() {
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">
+      
           <p className="text-center text-sm text-muted-foreground">
-            Don’t have an account?{" "}
+            Don't have an account?{" "}
             <Link
               to="/sign-up"
               className="text-primary hover:underline font-medium"

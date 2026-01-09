@@ -8,20 +8,38 @@ import Layout from "../Layout";
 
 const ProtectedRoute = () => {
   const [loading, setLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+
   const { user, isLoading, isProfileCompleted, setProfileCompleted } =
     useAuthStore();
 
   useEffect(() => {
-    const checkProfile = async () => {
-      // 1. Check localStorage first
-      const cached = localStorage.getItem(`${user.id}_isProfileCompleted`);
+    const checkProfileAndPassword = async () => {
+      
+      const { data: pwdData, error: pwdError } = await supabase
+        .from("needy_profiles")
+        .select("must_change_password")
+        .eq("profile_id", user.id)
+        .single();
+
+
+      if (!pwdError && pwdData?.must_change_password) {
+        setMustChangePassword(true);
+        setLoading(false);
+        return; 
+      }
+
+
+      const cached = localStorage.getItem(
+        `${user.id}_isProfileCompleted`
+      );
+
       if (cached !== null) {
         setProfileCompleted(cached === "true");
-        setLoading(false); // ✅ stop loading as soon as we have data
+        setLoading(false);
         return;
       }
 
-      // 2. Fetch from DB
       const { data, error } = await supabase
         .from("profiles")
         .select("isprofilecompleted")
@@ -30,25 +48,31 @@ const ProtectedRoute = () => {
 
       if (error) {
         console.error("Profile fetch error:", error);
-        setProfileCompleted(false); // fallback
+        setProfileCompleted(false);
       } else if (data) {
         localStorage.setItem(
           `${user.id}_isProfileCompleted`,
-          data.isprofilecompleted
+          String(data.isprofilecompleted)
         );
         setProfileCompleted(data.isprofilecompleted);
       }
 
-      setLoading(false); // ✅ only set loading false after data is ready
+      setLoading(false);
     };
 
-    user && checkProfile();
+    if (user) checkProfileAndPassword();
   }, [user]);
 
-  // Wait for auth loading to complete first
+
   if (isLoading) return <Loading text="Authenticating..." />;
   if (!user) return <Navigate to="/sign-in" />;
-  if (loading) return <Loading text="Loading profile..." />;
+  if (loading) return <Loading text="Loading user..." />;
+
+  if (mustChangePassword) {
+    return <Navigate to="/change-password" replace />;
+  }
+
+  // EXISTING FLOW
   return isProfileCompleted ? <Layout /> : <Welcome />;
 };
 
